@@ -31,10 +31,8 @@ function initVoices(languages) {
             opt.text = v.name;
             opt.voice = v;
             elem.appendChild(opt);
-            if (!v.localService) {
-                sel = opt;
-                if (v.name.includes("(Natural)")) nat = opt;
-            }
+            if (v.name.includes("Online")) sel = opt;
+            if (v.name.includes("(Natural)")) nat = opt;
         }
         if (nat != null) sel = nat;
         if (sel != null) sel.selected = true;
