@@ -4,7 +4,8 @@ var langs = {
     fr: { name: "フランス語", voice: lang_fr, pitch: 1 },
 };
 
-function initVoices() {
+function initVoices(languages) {
+    if (languages) langs = languages;
     if (!window.speechSynthesis) return;
     let voices = [];
     function setVoices() {
@@ -32,8 +33,6 @@ function initVoices() {
     speechSynthesis.addEventListener("voiceschanged", setVoices);
     setVoices();
 }
-
-initVoices();
 
 document.addEventListener("DOMContentLoaded", () => {
     for (let s of Array.from(document.getElementsByClassName("speak"))) {
