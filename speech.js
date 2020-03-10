@@ -1,8 +1,4 @@
-var langs = {
-    ja: { name: "日本語", voice: lang_ja, pitch: 1 },
-    en: { name: "英語", voice: lang_en, pitch: 1 },
-    fr: { name: "フランス語", voice: lang_fr, pitch: 1 },
-};
+var langs = {};
 
 function initVoices(languages) {
     if (languages) langs = languages;
