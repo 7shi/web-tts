@@ -2,6 +2,19 @@ var langs = {};
 
 function initVoices(languages) {
     if (languages) langs = languages;
+    document.addEventListener("DOMContentLoaded", () => {
+        for (let s of Array.from(document.getElementsByClassName("speak"))) {
+            let t = s.textContent;
+            s.speakTarget = getTarget(s);
+            let lang = s.getAttribute("language");
+            if (lang) {
+                s.language = langs[lang];
+                if (!t) t = s.language.name;
+            }
+            s.textContent = t;
+            s.addEventListener("click", () => speak(s));
+        }
+    });
     if (!window.speechSynthesis) return;
     let voices = [];
     function setVoices() {
@@ -29,20 +42,6 @@ function initVoices(languages) {
     speechSynthesis.addEventListener("voiceschanged", setVoices);
     setVoices();
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    for (let s of Array.from(document.getElementsByClassName("speak"))) {
-        let t = s.textContent;
-        s.speakTarget = getTarget(s);
-        let lang = s.getAttribute("language");
-        if (lang) {
-            s.language = langs[lang];
-            if (!t) t = s.language.name;
-        }
-        s.textContent = t;
-        s.addEventListener("click", () => speak(s));
-    }
-});
 
 function getTarget(elem) {
     if (elem.getAttribute("speak")) return [elem];
