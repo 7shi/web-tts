@@ -129,3 +129,66 @@ function spanLeave(ev) {
     for (let span of spanTarget.spans) span.classList.remove("hovering");
     spanTarget = null;
 }
+
+function makePairTable(table1, table2) {
+    let langs1 = table1.getAttribute("languages").replace(/;/g, "|").split("|");
+    let langs2 = table2.getAttribute("languages").split("|").map(ls => ls.split(";"));
+    let langs3 = langs2.map(ls => ls[0].replace(/^\[.*?\]/, ""));
+    let buttons1 = {};
+    for (let [i, button] of Array.from(table1.getElementsByTagName("td")).entries()) {
+        let play = "▶", ls = langs1[i];
+        let m = ls.match(/^\[(.*?)\](.*)$/);
+        if (m) { play = m[1]; ls = m[2]; }
+        buttons1[ls] = button;
+        button.languages = ls;
+        button.classList.add("speak");
+        if (play) {
+            let t = button.textContent;
+            if (!t) t = ls.split(",").map(l => langs[l].name).join("→");
+            button.playStop = [play + " " + t, "■ " + t];
+            button.textContent = button.playStop[0];
+        }
+        button.speakTarget = [];
+    }
+    for (let tr of Array.from(table2.getElementsByTagName("tr"))) {
+        let buttons2 = [];
+        let tds = Array.from(tr.getElementsByTagName("td"));
+        for (let [i, td] of tds.entries()) {
+            td.spans = Array.from(td.getElementsByTagName("span"));
+            for (let [j, ls] of langs2[i].entries()) {
+                let play = "▶";
+                let m = ls.match(/^\[(.*?)\](.*)$/);
+                if (m) { play = m[1]; ls = m[2]; }
+                let button = document.createElement("span");
+                buttons2.push(button);
+                button.classList.add("speak");
+                button.speakTarget = [];
+                button.languages = ls.split(",");
+                button.style.width = "1.5em";
+                button.playStop = [play, "■"];
+                button.textContent = button.playStop[0];
+                td.insertBefore(button, td.spans[0]);
+                if (ls in buttons1) buttons1[ls].speakTarget.push(button);
+            }
+        }
+        for (let i = 0; i < tds[0].spans.length; i++) {
+            let spans = tds.map(td => td.spans[i]);
+            let splangs = {};
+            for (let [j, span] of spans.entries()) {
+                let lang = langs3[j];
+                splangs[lang] = span;
+                span.language = langs[lang];
+                span.spans = spans;
+                span.speak = speakSpan;
+                span.textContent = span.textContent;
+                span.addEventListener("mouseenter", spanEnter);
+                span.addEventListener("mouseleave", spanLeave);
+            }
+            for (let button of buttons2) {
+                for (let lang of button.languages) {
+                    button.speakTarget.push(splangs[lang]);
+                }
+            }
+        }
+    }
+}
