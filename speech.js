@@ -79,9 +79,9 @@ async function speakLine(elem) {
 
 async function speakWords(lang, targets) {
     for (let t of Array.from(targets)) {
-        t.classList.add("speaking3");
+        t.classList.add("speaking-word");
         let cancel = await speak1(lang, t);
-        t.classList.remove("speaking3");
+        t.classList.remove("speaking-word");
         if (cancel) return true;
     }
     return false;

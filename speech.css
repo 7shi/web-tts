@@ -67,3 +67,7 @@ table.sentences td.speak {
 .speaking2 {
     background: #b0d0ff;
 }
+
+.speaking-word {
+    background: yellow;
+}
