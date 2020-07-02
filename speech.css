@@ -68,6 +68,14 @@ table.sentences td.speak {
     background: #b0d0ff;
 }
 
+.speaking3 {
+    background: #d8d8d8;
+}
+
 .speaking-word {
     background: yellow;
+}
+
+.hovering {
+    background: #e8e8e8;
 }
