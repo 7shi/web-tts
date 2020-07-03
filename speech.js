@@ -219,6 +219,12 @@ function spanLeave(ev) {
     spanTarget = null;
 }
 
+function* getSpans(elem) {
+    for (let n = elem.firstChild; n; n = n.nextSibling) {
+        if (n.tagName == "SPAN") yield n;
+    }
+}
+
 function makePairTable(table1, table2) {
     let langs1 = table1.getAttribute("languages").replace(/;/g, "|").split("|");
     let langs2 = table2.getAttribute("languages").split("|").map(ls => ls.split(";"));
@@ -243,7 +249,7 @@ function makePairTable(table1, table2) {
         let buttons2 = [];
         let tds = Array.from(tr.getElementsByTagName("td"));
         for (let [i, td] of tds.entries()) {
-            td.spans = Array.from(td.getElementsByTagName("span"));
+            td.spans = Array.from(getSpans(td));
             for (let [j, ls] of langs2[i].entries()) {
                 let play = "▶";
                 let m = ls.match(/^\[(.*?)\](.*)$/);
@@ -290,7 +296,7 @@ function makePairTable(table1, table2) {
 function setSpeakText(table, lang, words) {
     for (let td of Array.from(table.getElementsByTagName("td"))) {
         if (td.getAttribute("language") != lang) continue;
-        for (let span of Array.from(td.getElementsByTagName("span"))) {
+        for (let span of Array.from(getSpans(td))) {
             if (!span.spans) continue;
             let s1 = span.textContent, f = false;
             for (let src in words) {
