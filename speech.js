@@ -77,6 +77,49 @@ function initVoices(languages, table) {
     setVoices();
 }
 
+class Position {
+    constructor(elem) {
+        this.pos1  = [];
+        this.pos2  = [];
+        this.text1 = "";
+        this.text2 = "";
+        let p1 = 0, p2 = 0;
+        for (let n = elem.firstChild;; n = n.nextSibling) {
+            this.pos1.push(p1);
+            this.pos2.push(p2);
+            if (!n) break;
+            let t1 = n.textContent, t2 = null;
+            if (n.nodeType != Node.TEXT_NODE) t2 = n.getAttribute("s");
+            if (!t2) t2 = t1;
+            p1 += t1.length;
+            p2 += t2.length;
+            this.text1 += t1;
+            this.text2 += t2;
+        }
+    }
+
+    getPos(p, before = true) {
+        if (p < 0) return 0;
+        let i = this.pos2.findIndex(x => x >= p);
+        if (i < 0) return this.pos1[this.pos1.length - 1];
+        if (this.pos2[i] == p) return this.pos1[i];
+        let l1 = this.pos1[i] - this.pos1[i - 1];
+        let l2 = this.pos2[i] - this.pos2[i - 1];
+        if (l1 == l2) return this.pos1[i - 1] + (p - this.pos2[i - 1]);
+        return before ? this.pos1[i - 1] : this.pos1[i];
+    }
+
+    getHTML(start, length) {
+        let s = this.getPos(start);
+        let e = this.getPos(start + length);
+        return this.text1.substring(0, s) +
+            '<span class="speaking-word">' +
+            this.text1.substring(s, e) +
+            '</span>' +
+            this.text1.substring(e);
+    }
+}
+
 var stopSpeaking = () => false;
 
 async function speak(elem) {
@@ -90,22 +133,29 @@ function speak1(lang, target) {
     return new Promise((resolve, _) => {
         let opt = lang.voice.selectedOptions;
         if (!opt || opt.length == 0) return resolve(false);
+        let html = target.innerHTML;
+        let p = new Position(target);
+        let step = 0;
         let speakend = cancel => {
             speakend = () => false;
+            if (step == 1) target.innerHTML = html;
+            step = 2;
             if (cancel) speechSynthesis.cancel();
             resolve(cancel);
             return cancel;
         };
         stopSpeaking = () => speakend(true);
-        let text = target.getAttribute("speak");
-        if (!text) text = target.getAttribute("s");
-        if (!text) text = target.textContent;
-        let u = new SpeechSynthesisUtterance(text);
+        let u = new SpeechSynthesisUtterance(p.text2);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
         u.rate = parseFloat(lang_rate.value);
         u.pitch = lang.pitch;
         u.onend = u.onerror = () => speakend(false);
+        u.onboundary = ev => {
+            if (ev.name != "word" || step > 1) return;
+            step = 1;
+            target.innerHTML = p.getHTML(ev.charIndex, ev.charLength);
+        };
         speechSynthesis.speak(u);
     });
 }
@@ -172,7 +222,6 @@ function spanLeave(ev) {
 function makePairTable(table1, table2) {
     let langs1 = table1.getAttribute("languages").replace(/;/g, "|").split("|");
     let langs2 = table2.getAttribute("languages").split("|").map(ls => ls.split(";"));
-    let langs3 = langs2.map(ls1 => ls1.find(ls2 => ls2.split(",").length == 1).replace(/^\[.*?\]/, ""));
     let buttons1 = {};
     for (let [i, button] of Array.from(table1.getElementsByTagName("td")).entries()) {
         let play = "▶", ls = langs1[i];
@@ -189,6 +238,7 @@ function makePairTable(table1, table2) {
         }
         button.speakTarget = [];
     }
+    let langs3 = [];
     for (let tr of Array.from(table2.getElementsByTagName("tr"))) {
         let buttons2 = [];
         let tds = Array.from(tr.getElementsByTagName("td"));
@@ -208,6 +258,11 @@ function makePairTable(table1, table2) {
                 button.textContent = button.playStop[0];
                 td.insertBefore(button, td.spans[0]);
                 if (ls in buttons1) buttons1[ls].speakTarget.push(button);
+                if (button.languages.length == 1) {
+                    let l = button.languages[0];
+                    langs3.push(l);
+                    td.setAttribute("language", l);
+                }
             }
         }
         for (let i = 0; i < tds[0].spans.length; i++) {
@@ -228,6 +283,27 @@ function makePairTable(table1, table2) {
                     button.speakTarget.push(splangs[lang]);
                 }
             }
+        }
+    }
+}
+
+function setSpeakText(table, lang, words) {
+    for (let td of Array.from(table.getElementsByTagName("td"))) {
+        if (td.getAttribute("language") != lang) continue;
+        for (let span of Array.from(td.getElementsByTagName("span"))) {
+            if (!span.spans) continue;
+            let s1 = span.textContent, f = false;
+            for (let src in words) {
+                let dst = words[src];
+                let s2 = "", i1 = 0, i2;
+                while ((i2 = s1.indexOf(src, i1)) >= 0) {
+                    f = true;
+                    s2 += s1.substring(i1, i2) + '<span s="' + dst + '">' + src + '</span>';
+                    i1 = i2 + src.length;
+                }
+                s1 = s2 + s1.substring(i1);
+            }
+            if (f) span.innerHTML = s1;
         }
     }
 }
