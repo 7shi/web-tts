@@ -1,7 +1,46 @@
 var langs = {};
 
-function initVoices(languages) {
+function initVoices(languages, table) {
     if (languages) langs = languages;
+    if (table) {
+        table.classList.add("sentences");
+        for (let key in languages) {
+            let value = languages[key];
+            let tr  = document.createElement("tr");
+            let td1 = document.createElement("td");
+            let td2 = document.createElement("td");
+            let sel = document.createElement("select");
+            td1.classList.add("speak");
+            td1.setAttribute("language", key);
+            td1.setAttribute("speak", value.test);
+            sel.classList.add("voicelist");
+            sel.setAttribute("language", key);
+            td2.appendChild(sel);
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+            table.appendChild(tr);
+            value.voice = sel;
+        }
+        let tr  = document.createElement("tr");
+        let td1 = document.createElement("td");
+        let td2 = document.createElement("td");
+        td1.textContent = "読み上げ速度";
+        lang_rate = document.createElement("select");
+        let rates = [
+            [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
+        ];
+        for (let [value, text] of rates) {
+            let opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = text;
+            lang_rate.appendChild(opt);
+            if (value == 1) opt.selected = true;
+        }
+        td2.appendChild(lang_rate);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        table.appendChild(tr);
+    }
     document.addEventListener("DOMContentLoaded", () => {
         for (let s of Array.from(document.getElementsByClassName("speak"))) {
             if (!s.textContent) {
