@@ -172,7 +172,7 @@ function spanLeave(ev) {
 function makePairTable(table1, table2) {
     let langs1 = table1.getAttribute("languages").replace(/;/g, "|").split("|");
     let langs2 = table2.getAttribute("languages").split("|").map(ls => ls.split(";"));
-    let langs3 = langs2.map(ls => ls[0].replace(/^\[.*?\]/, ""));
+    let langs3 = langs2.map(ls1 => ls1.find(ls2 => ls2.split(",").length == 1).replace(/^\[.*?\]/, ""));
     let buttons1 = {};
     for (let [i, button] of Array.from(table1.getElementsByTagName("td")).entries()) {
         let play = "▶", ls = langs1[i];
