@@ -121,7 +121,7 @@ class Position {
 }
 
 var stopSpeaking = () => false;
-let nextSpeaking = null;
+var nextSpeaking = null;
 
 async function speak(elem) {
     if (!window.speechSynthesis) return;
@@ -217,7 +217,7 @@ async function speakSpan() {
     return cancel;
 }
 
-let spanTarget = null;
+var spanTarget = null;
 
 function spanEnter(ev) {
     if (spanTarget) spanLeave(null);
