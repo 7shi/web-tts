@@ -121,12 +121,20 @@ class Position {
 }
 
 var stopSpeaking = () => false;
+let nextSpeaking = null;
 
 async function speak(elem) {
-    if (!window.speechSynthesis) return true;
-    let f = elem.classList.contains("speaking");
-    if (stopSpeaking() && f) return true;
-    return await elem.speak();
+    if (!window.speechSynthesis) return;
+    while (elem) {
+        let f = elem.classList.contains("speaking");
+        if (stopSpeaking()) {
+            if (!f) nextSpeaking = elem;
+            return;
+        }
+        await elem.speak();
+        elem = nextSpeaking;
+        nextSpeaking = null;
+    }
 }
 
 function speak1(lang, target) {
