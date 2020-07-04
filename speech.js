@@ -134,7 +134,12 @@ function speak1(lang, target) {
         let opt = lang.voice.selectedOptions;
         if (!opt || opt.length == 0) return resolve(false);
         let html = target.innerHTML;
-        let p = new Position(target);
+        let p = null;
+        let text = target.getAttribute("speak");
+        if (!text) {
+            p = new Position(target);
+            text = p.text2;
+        }
         let step = 0;
         let speakend = cancel => {
             speakend = () => false;
@@ -145,17 +150,19 @@ function speak1(lang, target) {
             return cancel;
         };
         stopSpeaking = () => speakend(true);
-        let u = new SpeechSynthesisUtterance(p.text2);
+        let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
         u.rate = parseFloat(lang_rate.value);
         u.pitch = lang.pitch;
         u.onend = u.onerror = () => speakend(false);
-        u.onboundary = ev => {
-            if (ev.name != "word" || step > 1) return;
-            step = 1;
-            target.innerHTML = p.getHTML(ev.charIndex, ev.charLength);
-        };
+        if (p) {
+            u.onboundary = ev => {
+                if (ev.name != "word" || step > 1) return;
+                step = 1;
+                target.innerHTML = p.getHTML(ev.charIndex, ev.charLength);
+            };
+        }
         speechSynthesis.speak(u);
     });
 }
