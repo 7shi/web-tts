@@ -69,7 +69,9 @@ function initVoices(languages, table) {
 
 function setSpeak(elem) {
     elem.classList.add("speak");
-    if (!elem.textContent) {
+    if (elem.playStop) {
+        elem.textContent = elem.playStop[0];
+    } else if (!elem.textContent) {
         elem.language = langs[elem.getAttribute("language")];
         elem.textContent = elem.language.name;
     }
@@ -233,90 +235,129 @@ function* getSpans(elem) {
     }
 }
 
-function makePairTable(table1, table2) {
-    let langs1 = table1.getAttribute("languages").replace(/;/g, "|").split("|");
-    let langs2 = table2.getAttribute("languages").split("|").map(ls => ls.split(";"));
-    let buttons1 = {};
-    for (let [i, button] of Array.from(table1.getElementsByTagName("td")).entries()) {
-        let play = "▶", ls = langs1[i];
-        let m = ls.match(/^\[(.*?)\](.*)$/);
-        if (m) { play = m[1]; ls = m[2]; }
-        buttons1[ls] = button;
-        button.languages = ls;
-        if (play) {
-            let t = button.textContent;
-            if (!t) t = ls.split(",").map(l => langs[l].name).join("→");
-            button.playStop = [play + " " + t, "■ " + t];
-            button.textContent = button.playStop[0];
-        }
-        button.speakTarget = [];
-        setSpeak(button);
+function initTable(source, button, text) {
+    let langText = {};
+    for (let tr of Array.from(source.getElementsByTagName("tr"))) {
+        langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
     }
-    let langs3 = [];
-    for (let tr of Array.from(table2.getElementsByTagName("tr"))) {
-        let buttons2 = [];
-        let tds = Array.from(tr.getElementsByTagName("td"));
-        for (let [i, td] of tds.entries()) {
+    let ls = Object.keys(langText);
+    button.width = text.width = "100%";
+    button.classList.add("sentences");
+    text  .classList.add("langs");
+    let tr  = document.createElement("tr");
+    let td1 = document.createElement("td");
+    let td2 = document.createElement("td");
+    let sp1 = document.createElement("span");
+    let sp2 = document.createElement("span");
+    let sp3 = document.createElement("span");
+    let sp4 = document.createElement("span");
+    let sl1 = document.createElement("select");
+    let sl2 = document.createElement("select");
+    td1.width = td2.width = "50%";
+    sp1.style.width = sp3.style.width = "6em";
+    sp2.style.width = sp4.style.width = "2em";
+    sp1.playStop = ["⇨ 左→右", "■ 左→右"];
+    sp2.playStop = sp4.playStop = ["▶", "■"];
+    sp3.textContent = "⇆ 入替";
+    for (let [i, lang] of ls.entries()) {
+        let opt1 = document.createElement("option");
+        opt1.value = lang;
+        opt1.textContent = langs[lang].name;
+        let opt2 = opt1.cloneNode(true);
+        if (i == 0) opt1.selected = true;
+        if (i == 1) opt2.selected = true;
+        sl1.appendChild(opt1);
+        sl2.appendChild(opt2);
+    }
+    setSpeak(sp1);
+    setSpeak(sp2);
+    setSpeak(sp4);
+    sp3.classList.add("speak");
+    td1.appendChild(sp1);
+    td1.appendChild(sp2);
+    td1.appendChild(sl1);
+    td2.appendChild(sp3);
+    td2.appendChild(sp4);
+    td2.appendChild(sl2);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    button.appendChild(tr);
+    let stop = false, sps = [sp1, sp2, sp4];
+    sl1.onchange = sl2.onchange = () => {
+        if (!stop) setTextTable(langText, text, sps, [sl1.value, sl2.value]);
+    };
+    sp3.onclick = () => {
+        stop = true;
+        let v = sl1.value;
+        sl1.value = sl2.value;
+        sl2.value = v;
+        stop = false;
+        setTextTable(langText, text, sps, [sl1.value, sl2.value]);
+    };
+    setTextTable(langText, text, sps, [ls[0], ls[1]]);
+}
+
+function setTextTable(langText, table, sps, languages) {
+    for (let sp of sps) sp.speakTarget = [];
+    table.innerHTML = "";
+    let src = languages.map(lang => langText[lang]);
+    let len = Math.min(...src.map(x => x.length));
+    for (let i = 0; i < len; i++) {
+        let tr = document.createElement("tr");
+        let tds = src.map(x => x[i].cloneNode(true));
+        let buttons = [document.createElement("span")];
+        sps[0].speakTarget.push(buttons[0]);
+        buttons[0].playStop = ["⇨", "■"];
+        for (let [j, td] of tds.entries()) {
+            if (i == 0) td.width = "50%";
             td.spans = Array.from(getSpans(td));
-            for (let [j, ls] of langs2[i].entries()) {
-                let play = "▶";
-                let m = ls.match(/^\[(.*?)\](.*)$/);
-                if (m) { play = m[1]; ls = m[2]; }
-                let button = document.createElement("span");
-                buttons2.push(button);
-                button.speakTarget = [];
-                button.languages = ls.split(",");
-                button.style.width = "1.5em";
-                button.playStop = [play, "■"];
-                button.textContent = button.playStop[0];
-                setSpeak(button);
-                td.insertBefore(button, td.spans[0]);
-                if (ls in buttons1) buttons1[ls].speakTarget.push(button);
-                if (button.languages.length == 1) {
-                    let l = button.languages[0];
-                    langs3.push(l);
-                    td.setAttribute("language", l);
-                }
-            }
+            let b = document.createElement("span");
+            buttons.push(b);
+            sps[j + 1].speakTarget.push(b);
+            b.playStop = ["▶", "■"];
+            td.insertBefore(b, td.spans[0]);
+            tr.appendChild(td);
         }
-        for (let i = 0; i < tds[0].spans.length; i++) {
-            let spans = tds.map(td => td.spans[i]);
-            let splangs = {};
-            for (let [j, span] of spans.entries()) {
-                let lang = langs3[j];
-                splangs[lang] = span;
-                span.language = langs[lang];
+        tds[0].insertBefore(buttons[0], tds[0].firstChild);
+        for (let b of buttons) {
+            b.speakTarget = [];
+            b.style.width = "1.5em";
+            setSpeak(b);
+        }
+        for (let j = 0; j < tds[0].spans.length; j++) {
+            let spans = tds.map(td => td.spans[j]);
+            for (let [k, span] of spans.entries()) {
+                buttons[0    ].speakTarget.push(span);
+                buttons[k + 1].speakTarget.push(span);
+                span.language = langs[languages[k]];
                 span.spans = spans;
                 span.speak = speakSpan;
                 span.addEventListener("mouseenter", spanEnter);
                 span.addEventListener("mouseleave", spanLeave);
             }
-            for (let button of buttons2) {
-                for (let lang of button.languages) {
-                    button.speakTarget.push(splangs[lang]);
-                }
-            }
         }
+        table.appendChild(tr);
     }
 }
 
-function setSpeakText(table, lang, words) {
-    for (let td of Array.from(table.getElementsByTagName("td"))) {
-        if (td.getAttribute("language") != lang) continue;
-        for (let span of Array.from(getSpans(td))) {
-            if (!span.spans) continue;
-            let s1 = span.textContent, f = false;
-            for (let src in words) {
-                let dst = words[src];
-                let s2 = "", i1 = 0, i2;
-                while ((i2 = s1.indexOf(src, i1)) >= 0) {
-                    f = true;
-                    s2 += s1.substring(i1, i2) + '<span s="' + dst + '">' + src + '</span>';
-                    i1 = i2 + src.length;
+function setSpeakText(source, lang, words) {
+    for (let tr of Array.from(source.getElementsByTagName("tr"))) {
+        if (tr.getAttribute("language") != lang) continue;
+        for (let td of Array.from(tr.getElementsByTagName("td"))) {
+            for (let span of Array.from(getSpans(td))) {
+                let s1 = span.textContent, f = false;
+                for (let src in words) {
+                    let dst = words[src];
+                    let s2 = "", i1 = 0, i2;
+                    while ((i2 = s1.indexOf(src, i1)) >= 0) {
+                        f = true;
+                        s2 += s1.substring(i1, i2) + '<span s="' + dst + '">' + src + '</span>';
+                        i1 = i2 + src.length;
+                    }
+                    s1 = s2 + s1.substring(i1);
                 }
-                s1 = s2 + s1.substring(i1);
+                if (f) span.innerHTML = s1;
             }
-            if (f) span.innerHTML = s1;
         }
     }
 }
