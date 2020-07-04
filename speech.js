@@ -155,7 +155,7 @@ function speak1(lang, target) {
             resolve(cancel);
             return cancel != null;
         };
-        stopSpeaking = cancel => speakend(cancel);
+        stopSpeaking = cancel => speakend(cancel ?? [null]);
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
