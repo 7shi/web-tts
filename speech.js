@@ -10,9 +10,9 @@ function initVoices(languages, table) {
             let td1 = document.createElement("td");
             let td2 = document.createElement("td");
             let sel = document.createElement("select");
-            td1.classList.add("speak");
             td1.setAttribute("language", key);
             td1.setAttribute("speak", value.test);
+            setSpeak(td1);
             sel.classList.add("voicelist");
             sel.setAttribute("language", key);
             td2.appendChild(sel);
@@ -41,16 +41,6 @@ function initVoices(languages, table) {
         tr.appendChild(td2);
         table.appendChild(tr);
     }
-    document.addEventListener("DOMContentLoaded", () => {
-        for (let s of Array.from(document.getElementsByClassName("speak"))) {
-            if (!s.textContent) {
-                s.language = langs[s.getAttribute("language")];
-                s.textContent = s.language.name;
-            }
-            if (!s.speak) s.speak = speakElem;
-            s.addEventListener("click", () => speak(s));
-        }
-    });
     if (!window.speechSynthesis) return;
     let voices = [];
     function setVoices() {
@@ -75,6 +65,18 @@ function initVoices(languages, table) {
     }
     speechSynthesis.addEventListener("voiceschanged", setVoices);
     setVoices();
+}
+
+function setSpeak(elem) {
+    elem.classList.add("speak");
+    if (!elem.textContent) {
+        elem.language = langs[elem.getAttribute("language")];
+        elem.textContent = elem.language.name;
+    }
+    if (!elem.speak) {
+        elem.speak = speakElem;
+        elem.addEventListener("click", () => speak(elem));
+    }
 }
 
 class Position {
@@ -241,7 +243,6 @@ function makePairTable(table1, table2) {
         if (m) { play = m[1]; ls = m[2]; }
         buttons1[ls] = button;
         button.languages = ls;
-        button.classList.add("speak");
         if (play) {
             let t = button.textContent;
             if (!t) t = ls.split(",").map(l => langs[l].name).join("→");
@@ -249,6 +250,7 @@ function makePairTable(table1, table2) {
             button.textContent = button.playStop[0];
         }
         button.speakTarget = [];
+        setSpeak(button);
     }
     let langs3 = [];
     for (let tr of Array.from(table2.getElementsByTagName("tr"))) {
@@ -262,12 +264,12 @@ function makePairTable(table1, table2) {
                 if (m) { play = m[1]; ls = m[2]; }
                 let button = document.createElement("span");
                 buttons2.push(button);
-                button.classList.add("speak");
                 button.speakTarget = [];
                 button.languages = ls.split(",");
                 button.style.width = "1.5em";
                 button.playStop = [play, "■"];
                 button.textContent = button.playStop[0];
+                setSpeak(button);
                 td.insertBefore(button, td.spans[0]);
                 if (ls in buttons1) buttons1[ls].speakTarget.push(button);
                 if (button.languages.length == 1) {
