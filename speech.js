@@ -121,19 +121,13 @@ class Position {
 }
 
 var stopSpeaking = () => false;
-var nextSpeaking = null;
 
 async function speak(elem) {
     if (!window.speechSynthesis) return;
     while (elem) {
-        let f = elem.classList.contains("speaking");
-        if (stopSpeaking()) {
-            if (!f) nextSpeaking = elem;
-            return;
-        }
-        await elem.speak();
-        elem = nextSpeaking;
-        nextSpeaking = null;
+        let cancel = [ elem.classList.contains("speaking") ? null : elem ];
+        if (stopSpeaking(cancel)) return;
+        elem = (await elem.speak() ?? [null])[0];
     }
 }
 
@@ -155,15 +149,15 @@ function speak1(lang, target) {
             step = 2;
             if (cancel) speechSynthesis.cancel();
             resolve(cancel);
-            return cancel;
+            return cancel != null;
         };
-        stopSpeaking = () => speakend(true);
+        stopSpeaking = cancel => speakend(cancel);
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
         u.rate = parseFloat(lang_rate.value);
         u.pitch = lang.pitch;
-        u.onend = u.onerror = () => speakend(false);
+        u.onend = u.onerror = () => speakend(null);
         if (p) {
             u.onboundary = ev => {
                 if (ev.name != "word" || step > 1) return;
@@ -178,13 +172,10 @@ function speak1(lang, target) {
 async function speakElem() {
     this.classList.add("speaking");
     if (this.playStop) this.textContent = this.playStop[1];
-    let cancel = false;
+    let cancel = null;
     if (this.speakTarget) {
         for (let t of this.speakTarget) {
-            if (await t.speak()) {
-                cancel = true;
-                break;
-            }
+            if (cancel = await t.speak()) break;
         }
     } else {
         cancel = await speak1(this.language, this);
