@@ -287,7 +287,6 @@ function makePairTable(table1, table2) {
                 span.language = langs[lang];
                 span.spans = spans;
                 span.speak = speakSpan;
-                span.textContent = span.textContent;
                 span.addEventListener("mouseenter", spanEnter);
                 span.addEventListener("mouseleave", spanLeave);
             }
