@@ -298,6 +298,7 @@ function initTable(source, button, text) {
 }
 
 function setTextTable(langText, table, sps, languages) {
+    stopSpeaking();
     for (let sp of sps) sp.speakTarget = [];
     table.innerHTML = "";
     let src = languages.map(lang => langText[lang]);
