@@ -79,6 +79,7 @@ function initVoices(languages, table) {
 
 class Position {
     constructor(elem) {
+        this.rawtx = [];
         this.pos1  = [];
         this.pos2  = [];
         this.text1 = "";
@@ -90,6 +91,7 @@ class Position {
             if (!n) break;
             let t1 = n.textContent, t2 = null;
             if (n.nodeType != Node.TEXT_NODE) t2 = n.getAttribute("s");
+            this.rawtx.push(!t2);
             if (!t2) t2 = t1;
             p1 += t1.length;
             p2 += t2.length;
@@ -103,9 +105,7 @@ class Position {
         let i = this.pos2.findIndex(x => x >= p);
         if (i < 0) return this.pos1[this.pos1.length - 1];
         if (this.pos2[i] == p) return this.pos1[i];
-        let l1 = this.pos1[i] - this.pos1[i - 1];
-        let l2 = this.pos2[i] - this.pos2[i - 1];
-        if (l1 == l2) return this.pos1[i - 1] + (p - this.pos2[i - 1]);
+        if (this.rawtx[i - 1]) return this.pos1[i - 1] + (p - this.pos2[i - 1]);
         return before ? this.pos1[i - 1] : this.pos1[i];
     }
 
