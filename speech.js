@@ -235,8 +235,8 @@ function* getSpans(elem) {
     }
 }
 
-function initTable(source, button, text, languages = null) {
-    if (!languages) languages = [ls[0], ls[1]];
+function initTable(source, button, text, ...languages) {
+    if (!languages.length) languages = [ls[0], ls[1]];
     let langText = {};
     for (let tr of Array.from(source.getElementsByTagName("tr"))) {
         langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
@@ -356,4 +356,47 @@ function setSpeakText(source, lang, words) {
             }
         }
     }
+}
+
+function convertSource(pre, ...langs) {
+    let count = langs.length;
+    let texts = [];
+    let lines = [];
+    for (let i = 0; i < count; i++) {
+        texts.push([]);
+        lines.push([]);
+    }
+    let n = 0;
+    for (let line of pre.textContent.trim().split("\n")) {
+        line = line.trim();
+        if (line.length) {
+            lines[n % count].push(line);
+            n++;
+        } else {
+            let bak = lines;
+            lines = [];
+            for (let i = 0; i < count; i++) {
+                texts[i].push(bak[i]);
+                lines.push([]);
+            }
+        }
+    }
+    for (let i = 0; i < count; i++) {
+        if (lines[i].length) texts[i].push(lines[i]);
+    }
+    let table = document.createElement("table");
+    for (let i = 0; i < count; i++) {
+        let tr = document.createElement("tr");
+        let lang = langs[i];
+        tr.setAttribute("language", lang);
+        let s = lang == "ja" || lang == "zh" ? "" : " ";
+        let span = "</span>" + s + "<span>";
+        for (let t of texts[i]) {
+            let td = document.createElement("td");
+            td.innerHTML = "<span>" + t.join(span) + "</span>";
+            tr.appendChild(td);
+        }
+        table.appendChild(tr);
+    }
+    return table;
 }
