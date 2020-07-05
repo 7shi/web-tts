@@ -115,7 +115,7 @@ class Position {
 
     getHTML(start, length) {
         let s = this.getPos(start);
-        let e = this.getPos(start + length);
+        let e = this.getPos(start + length, false);
         return this.text1.substring(0, s) +
             '<span class="speaking-word">' +
             this.text1.substring(s, e) +
