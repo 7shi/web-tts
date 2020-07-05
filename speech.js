@@ -367,7 +367,7 @@ function convertSource(pre, ...langs) {
         lines.push([]);
     }
     let n = 0;
-    for (let line of pre.textContent.trim().split("\n")) {
+    for (let line of (pre.textContent.trim() + "\n").split("\n")) {
         line = line.trim();
         if (line.length) {
             lines[n % count].push(line);
@@ -375,14 +375,13 @@ function convertSource(pre, ...langs) {
         } else {
             let bak = lines;
             lines = [];
+            let len = Math.max(...bak.map(x => x.length));
             for (let i = 0; i < count; i++) {
+                if (bak[i].length < len) bak[i].push("");
                 texts[i].push(bak[i]);
                 lines.push([]);
             }
         }
-    }
-    for (let i = 0; i < count; i++) {
-        if (lines[i].length) texts[i].push(lines[i]);
     }
     let table = document.createElement("table");
     for (let i = 0; i < count; i++) {
