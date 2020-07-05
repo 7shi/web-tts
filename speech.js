@@ -367,7 +367,7 @@ function convertSource(pre, ...langs) {
         lines.push([]);
     }
     let n = 0;
-    for (let line of (pre.textContent.trim() + "\n").split("\n")) {
+    for (let line of (pre.innerHTML.trim() + "\n").split("\n")) {
         line = line.trim();
         if (line.length) {
             lines[n % count].push(line);
