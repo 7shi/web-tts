@@ -347,18 +347,12 @@ function setSpeakText(source, lang, words) {
         if (tr.getAttribute("language") != lang) continue;
         for (let td of Array.from(tr.getElementsByTagName("td"))) {
             for (let span of Array.from(getSpans(td))) {
-                let s1 = span.textContent, f = false;
+                let s1 = span.innerHTML, s2 = s1;
                 for (let src in words) {
-                    let dst = words[src];
-                    let s2 = "", i1 = 0, i2;
-                    while ((i2 = s1.indexOf(src, i1)) >= 0) {
-                        f = true;
-                        s2 += s1.substring(i1, i2) + '<span s="' + dst + '">' + src + '</span>';
-                        i1 = i2 + src.length;
-                    }
-                    s1 = s2 + s1.substring(i1);
+                    let dst = '<span s="' + words[src] + '">$&</span>';
+                    s2 = s2.replace(RegExp(src, "g"), dst);
                 }
-                if (f) span.innerHTML = s1;
+                if (s1 != s2) span.innerHTML = s2;
             }
         }
     }
