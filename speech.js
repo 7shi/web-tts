@@ -235,7 +235,8 @@ function* getSpans(elem) {
     }
 }
 
-function initTable(source, button, text) {
+function initTable(source, button, text, languages = null) {
+    if (!languages) languages = [ls[0], ls[1]];
     let langText = {};
     for (let tr of Array.from(source.getElementsByTagName("tr"))) {
         langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
@@ -264,8 +265,8 @@ function initTable(source, button, text) {
         opt1.value = lang;
         opt1.textContent = langs[lang].name;
         let opt2 = opt1.cloneNode(true);
-        if (i == 0) opt1.selected = true;
-        if (i == 1) opt2.selected = true;
+        if (lang == languages[0]) opt1.selected = true;
+        if (lang == languages[1]) opt2.selected = true;
         sl1.appendChild(opt1);
         sl2.appendChild(opt2);
     }
@@ -294,7 +295,7 @@ function initTable(source, button, text) {
         stop = false;
         setTextTable(langText, text, sps, [sl1.value, sl2.value]);
     };
-    setTextTable(langText, text, sps, [ls[0], ls[1]]);
+    setTextTable(langText, text, sps, languages);
 }
 
 function setTextTable(langText, table, sps, languages) {
