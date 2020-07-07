@@ -289,6 +289,9 @@ function initTable(source, button, text, ...languages) {
         let v = sl1.value;
         sl1.value = sl3.value;
         sl3.value = v;
+        v = sl2.value;
+        sl2.value = sl4.value;
+        sl4.value = v;
         stop = false;
         setTextTable(langText, text, sps, [sl1.value, sl3.value]);
     };
