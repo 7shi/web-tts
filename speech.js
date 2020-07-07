@@ -255,7 +255,7 @@ function initTable(source, button, text, ...languages) {
     sp1.playStop = ["⇨", "■"];
     sp2.playStop = sp4.playStop = ["▶", "■"];
     sp3.textContent = "⇆";
-    for (let [i, lang] of ls.entries()) {
+    for (let lang of ls) {
         let opt1 = document.createElement("option");
         opt1.value = lang;
         opt1.textContent = langs[lang].name;
