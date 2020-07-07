@@ -140,7 +140,7 @@ function speak1(lang, target) {
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
-        u.rate = parseFloat(target.rate.value);
+        if (target.rate) u.rate = parseFloat(target.rate.value);
         u.pitch = lang.pitch;
         u.onend = u.onerror = () => speakend(null);
         if (p) {
