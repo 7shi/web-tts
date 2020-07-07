@@ -1,7 +1,9 @@
-var langs = {};
+let webTTS = {};
 
-function initVoices(languages, table) {
-    if (languages) langs = languages;
+webTTS.langs = {};
+
+webTTS.initVoices = function(languages, table) {
+    if (languages) webTTS.langs = languages;
     if (table) {
         table.classList.add("sentences");
         for (let key in languages) {
@@ -12,7 +14,7 @@ function initVoices(languages, table) {
             let sel = document.createElement("select");
             td1.setAttribute("language", key);
             td1.setAttribute("speak", value.test);
-            setSpeak(td1);
+            webTTS.setSpeak(td1);
             sel.classList.add("voicelist");
             sel.setAttribute("language", key);
             td2.appendChild(sel);
@@ -48,21 +50,21 @@ function initVoices(languages, table) {
     setVoices();
 }
 
-function setSpeak(elem) {
+webTTS.setSpeak = function(elem) {
     elem.classList.add("speak");
     if (elem.playStop) {
         elem.textContent = elem.playStop[0];
     } else if (!elem.textContent) {
-        elem.language = langs[elem.getAttribute("language")];
+        elem.language = webTTS.langs[elem.getAttribute("language")];
         elem.textContent = elem.language.name;
     }
     if (!elem.speak) {
-        elem.speak = speakElem;
-        elem.addEventListener("click", () => speak(elem));
+        elem.speak = webTTS.speakElem;
+        elem.addEventListener("click", () => webTTS.speak(elem));
     }
 }
 
-class Position {
+class webTTS_Position {
     constructor(elem) {
         this.rawtx = [];
         this.pos1  = [];
@@ -105,18 +107,18 @@ class Position {
     }
 }
 
-var stopSpeaking = () => false;
+webTTS.stopSpeaking = () => false;
 
-async function speak(elem) {
+webTTS.speak = async function(elem) {
     if (!window.speechSynthesis) return;
     while (elem) {
         let cancel = [ elem.classList.contains("speaking") ? null : elem ];
-        if (stopSpeaking(cancel)) return;
+        if (webTTS.stopSpeaking(cancel)) return;
         elem = (await elem.speak() ?? [null])[0];
     }
 }
 
-function speak1(lang, target) {
+webTTS.speak1 = function(lang, target) {
     return new Promise((resolve, _) => {
         let opt = lang.voice.selectedOptions;
         if (!opt || opt.length == 0) return resolve(false);
@@ -124,7 +126,7 @@ function speak1(lang, target) {
         let p = null;
         let text = target.getAttribute("speak");
         if (!text) {
-            p = new Position(target);
+            p = new webTTS_Position(target);
             text = p.text2;
         }
         let step = 0;
@@ -136,7 +138,7 @@ function speak1(lang, target) {
             resolve(cancel);
             return cancel != null;
         };
-        stopSpeaking = cancel => speakend(cancel ?? [null]);
+        webTTS.stopSpeaking = cancel => speakend(cancel ?? [null]);
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
@@ -154,7 +156,7 @@ function speak1(lang, target) {
     });
 }
 
-async function speakElem() {
+webTTS.speakElem = async function() {
     this.classList.add("speaking");
     if (this.playStop) this.textContent = this.playStop[1];
     let cancel = null;
@@ -163,14 +165,14 @@ async function speakElem() {
             if (cancel = await t.speak()) break;
         }
     } else {
-        cancel = await speak1(this.language, this);
+        cancel = await webTTS.speak1(this.language, this);
     }
     if (this.playStop) this.textContent = this.playStop[0];
     this.classList.remove("speaking");
     return cancel;
 }
 
-function ensureVisible(margin, ...elems) {
+webTTS.ensureVisible = function(margin, ...elems) {
     let rs = elems.map(elem => elem.getBoundingClientRect());
     let tp = Math.min(...rs.map(r => r.top   )) - margin;
     let bt = Math.max(...rs.map(r => r.bottom)) + margin;
@@ -183,40 +185,40 @@ function ensureVisible(margin, ...elems) {
     }
 }
 
-async function speakSpan() {
-    ensureVisible(innerHeight / 10, ...this.spans);
+webTTS.speakSpan = async function() {
+    webTTS.ensureVisible(innerHeight / 10, ...this.spans);
     for (let sp of this.spans)
         sp.classList.add(this == sp ? "speaking2" : "speaking3");
-    let cancel = await speak1(this.language, this);
+    let cancel = await webTTS.speak1(this.language, this);
     for (let sp of this.spans)
         sp.classList.remove(this == sp ? "speaking2" : "speaking3");
     return cancel;
 }
 
-var spanTarget = null;
+webTTS.spanTarget = null;
 
-function spanEnter(ev) {
-    if (spanTarget) spanLeave(null);
+webTTS.spanEnter = function(ev) {
+    if (webTTS.spanTarget) webTTS.spanLeave(null);
     let t = ev.target;
     if (!t.spans || t.classList.contains("speaking2") || t.classList.contains("speaking3"))
         return;
     for (let span of t.spans) span.classList.add("hovering");
-    spanTarget = ev.target;
+    webTTS.spanTarget = ev.target;
 }
 
-function spanLeave(ev) {
-    if (ev && ev.target != spanTarget) return;
-    for (let span of spanTarget.spans) span.classList.remove("hovering");
-    spanTarget = null;
+webTTS.spanLeave = function(ev) {
+    if (ev && ev.target != webTTS.spanTarget) return;
+    for (let span of webTTS.spanTarget.spans) span.classList.remove("hovering");
+    webTTS.spanTarget = null;
 }
 
-function* getSpans(elem) {
+webTTS.getSpans = function*(elem) {
     for (let n = elem.firstChild; n; n = n.nextSibling) {
         if (n.tagName == "SPAN") yield n;
     }
 }
 
-function initTable(source, button, text, ...languages) {
+webTTS.initTable = function(source, button, text, ...languages) {
     if (!languages.length) languages = [ls[0], ls[1]];
     let langText = {};
     for (let tr of Array.from(source.getElementsByTagName("tr"))) {
@@ -258,16 +260,16 @@ function initTable(source, button, text, ...languages) {
     for (let lang of ls) {
         let opt1 = document.createElement("option");
         opt1.value = lang;
-        opt1.textContent = langs[lang].name;
+        opt1.textContent = webTTS.langs[lang].name;
         let opt2 = opt1.cloneNode(true);
         if (lang == languages[0]) opt1.selected = true;
         if (lang == languages[1]) opt2.selected = true;
         sl1.appendChild(opt1);
         sl3.appendChild(opt2);
     }
-    setSpeak(sp1);
-    setSpeak(sp2);
-    setSpeak(sp4);
+    webTTS.setSpeak(sp1);
+    webTTS.setSpeak(sp2);
+    webTTS.setSpeak(sp4);
     sp3.classList.add("speak");
     td1.appendChild(sp1);
     td1.appendChild(sp2);
@@ -282,7 +284,7 @@ function initTable(source, button, text, ...languages) {
     button.appendChild(tr);
     let stop = false, sps = [sp1, sp2, sp4];
     sl1.onchange = sl3.onchange = () => {
-        if (!stop) setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+        if (!stop) webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
     };
     sp3.onclick = () => {
         stop = true;
@@ -293,13 +295,13 @@ function initTable(source, button, text, ...languages) {
         sl2.value = sl4.value;
         sl4.value = v;
         stop = false;
-        setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+        webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
     };
-    setTextTable(langText, text, sps, languages);
+    webTTS.setTextTable(langText, text, sps, languages);
 }
 
-function setTextTable(langText, table, sps, languages) {
-    stopSpeaking();
+webTTS.setTextTable = function(langText, table, sps, languages) {
+    webTTS.stopSpeaking();
     for (let sp of sps) sp.speakTarget = [];
     table.innerHTML = "";
     let src = languages.map(lang => langText[lang]);
@@ -312,7 +314,7 @@ function setTextTable(langText, table, sps, languages) {
         buttons[0].playStop = ["⇨", "■"];
         for (let [j, td] of tds.entries()) {
             if (i == 0) td.width = "50%";
-            td.spans = Array.from(getSpans(td));
+            td.spans = Array.from(webTTS.getSpans(td));
             let b = document.createElement("span");
             buttons.push(b);
             sps[j + 1].speakTarget.push(b);
@@ -324,30 +326,30 @@ function setTextTable(langText, table, sps, languages) {
         for (let b of buttons) {
             b.speakTarget = [];
             b.style.width = "1.5em";
-            setSpeak(b);
+            webTTS.setSpeak(b);
         }
         for (let j = 0; j < tds[0].spans.length; j++) {
             let spans = tds.map(td => td.spans[j]);
             for (let [k, span] of spans.entries()) {
                 buttons[0    ].speakTarget.push(span);
                 buttons[k + 1].speakTarget.push(span);
-                span.language = langs[languages[k]];
+                span.language = webTTS.langs[languages[k]];
                 span.spans = spans;
-                span.speak = speakSpan;
+                span.speak = webTTS.speakSpan;
                 span.rate  = table.rates[k];
-                span.addEventListener("mouseenter", spanEnter);
-                span.addEventListener("mouseleave", spanLeave);
+                span.addEventListener("mouseenter", webTTS.spanEnter);
+                span.addEventListener("mouseleave", webTTS.spanLeave);
             }
         }
         table.appendChild(tr);
     }
 }
 
-function setSpeakText(source, lang, words) {
+webTTS.setSpeakText = function(source, lang, words) {
     for (let tr of Array.from(source.getElementsByTagName("tr"))) {
         if (tr.getAttribute("language") != lang) continue;
         for (let td of Array.from(tr.getElementsByTagName("td"))) {
-            for (let span of Array.from(getSpans(td))) {
+            for (let span of Array.from(webTTS.getSpans(td))) {
                 let s1 = span.innerHTML, s2 = s1;
                 for (let src in words) {
                     let dst = '<span s="' + words[src] + '">$&</span>';
@@ -359,7 +361,7 @@ function setSpeakText(source, lang, words) {
     }
 }
 
-function convertSource(pre, ...langs) {
+webTTS.convertSource = function(pre, ...langs) {
     let count = langs.length;
     let texts = [];
     let lines = [];
