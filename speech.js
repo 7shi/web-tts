@@ -21,25 +21,6 @@ function initVoices(languages, table) {
             table.appendChild(tr);
             value.voice = sel;
         }
-        let tr  = document.createElement("tr");
-        let td1 = document.createElement("td");
-        let td2 = document.createElement("td");
-        td1.textContent = "読み上げ速度";
-        lang_rate = document.createElement("select");
-        let rates = [
-            [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
-        ];
-        for (let [value, text] of rates) {
-            let opt = document.createElement("option");
-            opt.value = value;
-            opt.textContent = text;
-            lang_rate.appendChild(opt);
-            if (value == 1) opt.selected = true;
-        }
-        td2.appendChild(lang_rate);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-        table.appendChild(tr);
     }
     if (!window.speechSynthesis) return;
     let voices = [];
@@ -159,7 +140,7 @@ function speak1(lang, target) {
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
-        u.rate = parseFloat(lang_rate.value);
+        u.rate = parseFloat(target.rate.value);
         u.pitch = lang.pitch;
         u.onend = u.onerror = () => speakend(null);
         if (p) {
@@ -254,12 +235,26 @@ function initTable(source, button, text, ...languages) {
     let sp4 = document.createElement("span");
     let sl1 = document.createElement("select");
     let sl2 = document.createElement("select");
+    let sl3 = document.createElement("select");
+    let sl4 = document.createElement("select");
+    let speechRates = [
+        [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
+    ];
+    text.rates = [sl2, sl4];
+    for (let sl of text.rates) {
+        for (let [value, text] of speechRates) {
+            let opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = text;
+            sl.appendChild(opt);
+            if (value == 1) opt.selected = true;
+        }
+    }
     td1.width = td2.width = "50%";
-    sp1.style.width = sp3.style.width = "6em";
-    sp2.style.width = sp4.style.width = "2em";
-    sp1.playStop = ["⇨ 左→右", "■ 左→右"];
+    for (let sp of [sp1, sp2, sp3, sp4]) sp.style.width = "2em";
+    sp1.playStop = ["⇨", "■"];
     sp2.playStop = sp4.playStop = ["▶", "■"];
-    sp3.textContent = "⇆ 入替";
+    sp3.textContent = "⇆";
     for (let [i, lang] of ls.entries()) {
         let opt1 = document.createElement("option");
         opt1.value = lang;
@@ -268,7 +263,7 @@ function initTable(source, button, text, ...languages) {
         if (lang == languages[0]) opt1.selected = true;
         if (lang == languages[1]) opt2.selected = true;
         sl1.appendChild(opt1);
-        sl2.appendChild(opt2);
+        sl3.appendChild(opt2);
     }
     setSpeak(sp1);
     setSpeak(sp2);
@@ -277,23 +272,25 @@ function initTable(source, button, text, ...languages) {
     td1.appendChild(sp1);
     td1.appendChild(sp2);
     td1.appendChild(sl1);
+    td1.appendChild(sl2);
     td2.appendChild(sp3);
     td2.appendChild(sp4);
-    td2.appendChild(sl2);
+    td2.appendChild(sl3);
+    td2.appendChild(sl4);
     tr.appendChild(td1);
     tr.appendChild(td2);
     button.appendChild(tr);
     let stop = false, sps = [sp1, sp2, sp4];
-    sl1.onchange = sl2.onchange = () => {
-        if (!stop) setTextTable(langText, text, sps, [sl1.value, sl2.value]);
+    sl1.onchange = sl3.onchange = () => {
+        if (!stop) setTextTable(langText, text, sps, [sl1.value, sl3.value]);
     };
     sp3.onclick = () => {
         stop = true;
         let v = sl1.value;
-        sl1.value = sl2.value;
-        sl2.value = v;
+        sl1.value = sl3.value;
+        sl3.value = v;
         stop = false;
-        setTextTable(langText, text, sps, [sl1.value, sl2.value]);
+        setTextTable(langText, text, sps, [sl1.value, sl3.value]);
     };
     setTextTable(langText, text, sps, languages);
 }
@@ -334,6 +331,7 @@ function setTextTable(langText, table, sps, languages) {
                 span.language = langs[languages[k]];
                 span.spans = spans;
                 span.speak = speakSpan;
+                span.rate  = table.rates[k];
                 span.addEventListener("mouseenter", spanEnter);
                 span.addEventListener("mouseleave", spanLeave);
             }
