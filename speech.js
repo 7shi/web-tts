@@ -172,21 +172,20 @@ webTTS.speakElem = async function() {
     return cancel;
 }
 
-webTTS.ensureVisible = function(margin, ...elems) {
-    let rs = elems.map(elem => elem.getBoundingClientRect());
-    let tp = Math.min(...rs.map(r => r.top   )) - margin;
-    let bt = Math.max(...rs.map(r => r.bottom)) + margin;
-    if (tp < 0) {
-        let top = pageYOffset + tp;
-        scroll({top: top, behavior: "smooth"});
-    } else if (bt > innerHeight) {
-        let top = pageYOffset + tp - (innerHeight - (bt - tp));
-        scroll({top: top, behavior: "smooth"});
-    }
+webTTS.getTopBottom = function(...elems) {
+    let rects  = elems.map(elem => elem.getBoundingClientRect());
+    let top    = Math.min(...rects.map(r => r.top));
+    let bottom = Math.max(...rects.map(r => r.bottom));
+    return [top, bottom];
 }
 
 webTTS.speakSpan = async function() {
-    webTTS.ensureVisible(innerHeight / 10, ...this.spans);
+    let [t, b] = webTTS.getTopBottom(this);
+    let ih = innerHeight;
+    if (0 <= t && t < ih && ih <= b + ih / 10) {
+        let top = pageYOffset + b - ih * 2 / 3;
+        scroll({ top, behavior: "smooth" });
+    }
     for (let sp of this.spans)
         sp.classList.add(this == sp ? "speaking2" : "speaking3");
     let cancel = await webTTS.speak1(this.language, this);
