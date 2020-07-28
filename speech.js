@@ -114,7 +114,8 @@ webTTS.speak = async function(elem) {
     while (elem) {
         let cancel = [ elem.classList.contains("speaking") ? null : elem ];
         if (webTTS.stopSpeaking(cancel)) return;
-        elem = (await elem.speak() ?? [null])[0];
+        let result = await elem.speak();
+        elem = result ? result[0] : null;
     }
 }
 
@@ -138,7 +139,7 @@ webTTS.speak1 = function(lang, target) {
             resolve(cancel);
             return cancel != null;
         };
-        webTTS.stopSpeaking = cancel => speakend(cancel ?? [null]);
+        webTTS.stopSpeaking = cancel => speakend(cancel ? cancel : [null]);
         let u = new SpeechSynthesisUtterance(text);
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
