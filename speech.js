@@ -12,11 +12,14 @@ webTTS.initVoices = function(languages, table) {
             let td1 = document.createElement("td");
             let td2 = document.createElement("td");
             let sel = document.createElement("select");
-            td1.setAttribute("language", key);
+            let lang = value.lang ?? key;
+            td1.setAttribute("language", lang);
             td1.setAttribute("speak", value.test);
             webTTS.setSpeak(td1);
             sel.classList.add("voicelist");
-            sel.setAttribute("language", key);
+            sel.setAttribute("language", lang);
+            if (value.country) sel.setAttribute("country", value.country);
+            if (value.prefer ) sel.setAttribute("prefer" , value.prefer);
             td2.appendChild(sel);
             tr.appendChild(td1);
             tr.appendChild(td2);
@@ -34,17 +37,32 @@ webTTS.initVoices = function(languages, table) {
     }
     function addVoices(elem) {
         let lang = elem.getAttribute("language");
-        let nat = null, sel = null;
+        if (!lang.includes("-")) lang += "-";
+        let cntr = elem.getAttribute("country");
+        if (cntr && !cntr.includes("-")) cntr = "-" + cntr;
+        let prfr = elem.getAttribute("prefer");
+        if (prfr) prfr = prfr.split(",");
+        let prf = null, nat = null, sel = null;
         for (let v of voices.filter(v => v.lang.startsWith(lang))) {
             let opt = document.createElement("option");
             opt.text = v.name;
             opt.voice = v;
             elem.appendChild(opt);
-            if (v.name.includes("Online")) sel = opt;
-            if (v.name.includes("(Natural)")) nat = opt;
+            if (!cntr || v.lang.endsWith(cntr)) {
+                if (!sel && v.localService === false) sel = opt;
+                if (!nat && v.name.includes("(Natural)")) nat = opt;
+                if (!prf && prfr) {
+                    for (const p of prfr) {
+                        if (v.name.includes(p)) {
+                            prf = opt;
+                            break;
+                        }
+                    }
+                }
+            }
         }
-        if (nat != null) sel = nat;
-        if (sel != null) sel.selected = true;
+        if (prf) sel = prf; else if (nat) sel = nat;
+        if (sel) sel.selected = true;
     }
     speechSynthesis.addEventListener("voiceschanged", setVoices);
     setVoices();
