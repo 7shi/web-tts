@@ -13,6 +13,7 @@ webTTS.initVoices = function(languages, table) {
             let td2 = document.createElement("td");
             let sel = document.createElement("select");
             let lang = value.lang ?? key;
+            td1.setAttribute("key", key);
             td1.setAttribute("language", lang);
             td1.setAttribute("speak", value.test);
             webTTS.setSpeak(td1);
@@ -73,7 +74,7 @@ webTTS.setSpeak = function(elem) {
     if (elem.playStop) {
         elem.textContent = elem.playStop[0];
     } else if (!elem.textContent) {
-        elem.language = webTTS.langs[elem.getAttribute("language")];
+        elem.language = webTTS.langs[elem.getAttribute("key")];
         elem.textContent = elem.language.name;
     }
     if (!elem.speak) {
