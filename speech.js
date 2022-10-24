@@ -380,14 +380,10 @@ webTTS.setSpeakText = function(source, lang, words) {
     }
 }
 
-webTTS.convertSource = function(pre, ...langs) {
+webTTS.readSource = function(pre, langs) {
     let count = langs.length;
-    let texts = [];
-    let lines = [];
-    for (let i = 0; i < count; i++) {
-        texts.push([]);
-        lines.push([]);
-    }
+    let lines = Array(count).fill().map(() => []);
+    let texts = Array(count).fill().map(() => []);
     let n = 0;
     for (let line of (pre.innerHTML.trim() + "\n").split("\n")) {
         line = line.trim();
@@ -395,16 +391,19 @@ webTTS.convertSource = function(pre, ...langs) {
             lines[n % count].push(line);
             n++;
         } else {
-            let bak = lines;
-            lines = [];
-            let len = Math.max(...bak.map(x => x.length));
+            let len = Math.floor((n + count - 1) / count);
             for (let i = 0; i < count; i++) {
-                if (bak[i].length < len) bak[i].push("");
-                texts[i].push(bak[i]);
-                lines.push([]);
+                if (lines[i].length < len) lines[i].push("");
+                texts[i].push(lines[i]);
             }
+            lines = Array(count).fill().map(() => []);
         }
     }
+    return texts;
+}
+
+webTTS.convertTable = function(texts, langs) {
+    let count = langs.length;
     let table = document.createElement("table");
     for (let i = 0; i < count; i++) {
         let tr = document.createElement("tr");
@@ -420,4 +419,8 @@ webTTS.convertSource = function(pre, ...langs) {
         table.appendChild(tr);
     }
     return table;
+}
+
+webTTS.convertSource = function(pre, ...langs) {
+    return webTTS.convertTable(webTTS.readSource(pre, langs), langs);
 }
