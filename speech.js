@@ -391,12 +391,13 @@ webTTS.readSource = function(pre, langs) {
             lines[n % count].push(line);
             n++;
         } else {
-            let len = Math.floor((n + count - 1) / count);
+            let len = lines[0].length;
             for (let i = 0; i < count; i++) {
                 if (lines[i].length < len) lines[i].push("");
                 texts[i].push(lines[i]);
             }
             lines = Array(count).fill().map(() => []);
+            n = 0;
         }
     }
     return texts;
