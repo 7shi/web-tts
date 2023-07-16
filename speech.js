@@ -149,6 +149,10 @@ webTTS.speak1 = function(lang, target) {
             p = new webTTS_Position(target);
             text = p.text2;
         }
+        if (text.trim() == "") {
+            resolve(null);
+            return;
+        }
         let step = 0;
         let speakend = cancel => {
             speakend = () => false;
