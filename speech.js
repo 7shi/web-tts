@@ -167,7 +167,7 @@ webTTS.speak1 = function(lang, target) {
         u.voice = lang.voice.selectedOptions[0].voice;
         u.lang = u.voice.lang;
         if (target.rate) u.rate = parseFloat(target.rate.value);
-        u.pitch = lang.pitch;
+        if (lang.pitch) u.pitch = lang.pitch;
         u.onend = u.onerror = () => speakend(null);
         if (p) {
             u.onboundary = ev => {
