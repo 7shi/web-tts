@@ -42,8 +42,8 @@ webTTS.initVoices = function(languages, table) {
         let cntr = elem.getAttribute("country");
         if (cntr && !cntr.includes("-")) cntr = "-" + cntr;
         let prfr = elem.getAttribute("prefer");
-        if (prfr) prfr = prfr.split(",");
-        let prf = null, nat = null, sel = null;
+        prfr = prfr ? prfr.split(",") : [];
+        let prfi = prfr.length, prf = null, nat = null, sel = null;
         for (let v of voices.filter(v => v.lang.startsWith(lang))) {
             let opt = document.createElement("option");
             opt.text = v.name;
@@ -52,13 +52,10 @@ webTTS.initVoices = function(languages, table) {
             if (!cntr || v.lang.endsWith(cntr)) {
                 if (!sel && v.localService === false) sel = opt;
                 if (!nat && v.name.includes("(Natural)")) nat = opt;
-                if (!prf && prfr) {
-                    for (const p of prfr) {
-                        if (v.name.includes(p)) {
-                            prf = opt;
-                            break;
-                        }
-                    }
+                let i = prfr.findIndex(p => v.name.includes(p));
+                if (0 <= i && i < prfi) {
+                    prfi = i;
+                    prf = opt;
                 }
             }
         }
