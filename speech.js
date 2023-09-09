@@ -44,7 +44,7 @@ webTTS.initVoices = function(languages, table) {
         let prfr = elem.getAttribute("prefer");
         prfr = prfr ? prfr.split(",") : [];
         let prfi = prfr.length, prf = null, nat = null, sel = null;
-        for (let v of voices.filter(v => v.lang.startsWith(lang))) {
+        for (let v of voices.filter(v => v.lang.replace(/(?<=^[a-z]+)_/, "-").startsWith(lang))) {
             let opt = document.createElement("option");
             opt.text = v.name;
             opt.voice = v;
