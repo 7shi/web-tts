@@ -44,12 +44,14 @@ webTTS.initVoices = function(languages, table) {
         let prfr = elem.getAttribute("prefer");
         prfr = prfr ? prfr.split(",") : [];
         let prfi = prfr.length, prf = null, nat = null, sel = null;
-        for (let v of voices.filter(v => v.lang.replace(/(?<=^[a-z]+)_/, "-").startsWith(lang))) {
+        for (let v of voices) {
+            let vl = v.lang.replace(/(?<=^[a-z]+)_/, "-").replace(/_#.+/, ""); // for Android Chrome
+            if (!vl.startsWith(lang)) continue;
             let opt = document.createElement("option");
             opt.text = v.name;
             opt.voice = v;
             elem.appendChild(opt);
-            if (!cntr || v.lang.endsWith(cntr)) {
+            if (!cntr || vl.endsWith(cntr)) {
                 if (!sel && v.localService === false) sel = opt;
                 if (!nat && v.name.includes("(Natural)")) nat = opt;
                 let i = prfr.findIndex(p => v.name.includes(p));
