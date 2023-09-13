@@ -52,7 +52,7 @@ webTTS.initVoices = function(languages, table) {
             opt.voice = v;
             elem.appendChild(opt);
             if (!cntr || vl.endsWith(cntr)) {
-                if (!sel && v.localService === false) sel = opt;
+                if (!sel || (sel.localService && !v.localService)) sel = opt;
                 if (!nat && v.name.includes("(Natural)")) nat = opt;
                 let i = prfr.findIndex(p => v.name.includes(p));
                 if (0 <= i && i < prfi) {
