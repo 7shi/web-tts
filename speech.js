@@ -99,7 +99,10 @@ class webTTS {
         await webTTS.stopSpeaking();
         if (cancel) return;
 
-        await elem.speak();
+        while (elem) {
+            await elem.speak();
+            elem = elem.nextSpeak;
+        }
     }
 
     static async speak1(lang, target) {
