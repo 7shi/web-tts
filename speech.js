@@ -1,7 +1,8 @@
 class webTTS {
-    static langs = {};
+    static langs  = {};
+    static voices = [];
 
-    static initVoices(languages, table) {
+    static async initVoices(languages, table) {
         if (languages) webTTS.langs = languages;
         if (table) {
             table.classList.add("sentences");
@@ -28,43 +29,42 @@ class webTTS {
             }
         }
         if (!window.speechSynthesis) return;
-        let voices = [];
-        function setVoices() {
-            if (voices.length) return;
-            voices = speechSynthesis.getVoices();
-            if (!voices.length) return;
-            Array.from(document.getElementsByClassName("voicelist")).forEach(addVoices);
+
+        webTTS.voices = speechSynthesis.getVoices();
+        if (!webTTS.voices.length) {
+            await new Promise(resolve => speechSynthesis.onvoiceschanged = resolve);
+            webTTS.voices = speechSynthesis.getVoices();
         }
-        function addVoices(elem) {
-            let lang = elem.getAttribute("language");
-            if (!lang.includes("-")) lang += "-";
-            let cntr = elem.getAttribute("country");
-            if (cntr && !cntr.includes("-")) cntr = "-" + cntr;
-            let prfr = elem.getAttribute("prefer");
-            prfr = prfr ? prfr.split(",") : [];
-            let prfi = prfr.length, prf = null, nat = null, sel = null;
-            for (let v of voices) {
-                let vl = v.lang.replace(/(?<=^[a-z]+)_/, "-").replace(/_#.+/, ""); // for Android Chrome
-                if (!vl.startsWith(lang)) continue;
-                let opt = document.createElement("option");
-                opt.text = v.name;
-                opt.voice = v;
-                elem.appendChild(opt);
-                if (!cntr || vl.endsWith(cntr)) {
-                    if (!sel || (sel.localService && !v.localService)) sel = opt;
-                    if (!nat && v.name.includes("(Natural)")) nat = opt;
-                    let i = prfr.findIndex(p => v.name.includes(p));
-                    if (0 <= i && i < prfi) {
-                        prfi = i;
-                        prf = opt;
-                    }
+        Array.from(document.getElementsByClassName("voicelist")).forEach(webTTS.addVoices);
+    }
+
+    static addVoices(elem) {
+        let lang = elem.getAttribute("language");
+        if (!lang.includes("-")) lang += "-";
+        let cntr = elem.getAttribute("country");
+        if (cntr && !cntr.includes("-")) cntr = "-" + cntr;
+        let prfr = elem.getAttribute("prefer");
+        prfr = prfr ? prfr.split(",") : [];
+        let prfi = prfr.length, prf = null, nat = null, sel = null;
+        for (let v of webTTS.voices) {
+            let vl = v.lang.replace(/(?<=^[a-z]+)_/, "-").replace(/_#.+/, ""); // for Android Chrome
+            if (!vl.startsWith(lang)) continue;
+            let opt = document.createElement("option");
+            opt.text = v.name;
+            opt.voice = v;
+            elem.appendChild(opt);
+            if (!cntr || vl.endsWith(cntr)) {
+                if (!sel || (sel.localService && !v.localService)) sel = opt;
+                if (!nat && v.name.includes("(Natural)")) nat = opt;
+                let i = prfr.findIndex(p => v.name.includes(p));
+                if (0 <= i && i < prfi) {
+                    prfi = i;
+                    prf = opt;
                 }
             }
-            if (prf) sel = prf; else if (nat) sel = nat;
-            if (sel) sel.selected = true;
         }
-        speechSynthesis.addEventListener("voiceschanged", setVoices);
-        setVoices();
+        if (prf) sel = prf; else if (nat) sel = nat;
+        if (sel) sel.selected = true;
     }
 
     static setSpeak(elem) {
