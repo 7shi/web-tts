@@ -89,16 +89,17 @@ class webTTS {
         });
     }
 
-    static stopSpeaking = () => false;
+    static async stopSpeakingDefault() {}
+    static stopSpeaking = webTTS.stopSpeakingDefault;
 
     static async speak(elem) {
         if (!window.speechSynthesis) return;
-        while (elem) {
-            let cancel = [ elem.classList.contains("speaking") ? null : elem ];
-            if (webTTS.stopSpeaking(cancel)) return;
-            let result = await elem.speak();
-            elem = result ? result[0] : null;
-        }
+
+        let cancel = elem.classList.contains("speaking");
+        await webTTS.stopSpeaking();
+        if (cancel) return;
+
+        await elem.speak();
     }
 
     static async speak1(lang, target) {
@@ -129,29 +130,26 @@ class webTTS {
             };
         }
 
-        let result = null;
-        webTTS.stopSpeaking = cancel => {
-            webTTS.stopSpeaking = () => false;
-            if (cancel) {
-                result = cancel;
-                speechSynthesis.cancel();
-                return true;
-            } else {
-                result = [null];
-                return false;
-            }
-        };
-
+        let cancel = null;
+        webTTS.stopSpeaking = () => new Promise((resolve, _) => {
+            cancel = resolve;
+            speechSynthesis.cancel();
+        });
         await webTTS.speakAsync(u);
         if (step == 1) target.innerHTML = html;
         step = 2;
-        return result;
+        webTTS.stopSpeaking = webTTS.stopSpeakingDefault;
+        if (cancel) {
+            cancel();
+            return true;
+        }
+        return false;
     }
 
     static async speakElem() {
         this.classList.add("speaking");
         if (this.playStop) this.textContent = this.playStop[1];
-        let cancel = null;
+        let cancel = false;
         if (this.speakTarget) {
             for (let t of this.speakTarget) {
                 if (cancel = await t.speak()) break;
@@ -209,7 +207,7 @@ class webTTS {
         }
     }
 
-    static initTable(source, button, text, ...languages) {
+    static async initTable(source, button, text, ...languages) {
         if (!languages.length) languages = [ls[0], ls[1]];
         let langText = {};
         for (let tr of Array.from(source.getElementsByTagName("tr"))) {
@@ -274,10 +272,10 @@ class webTTS {
         tr.appendChild(td2);
         button.appendChild(tr);
         let stop = false, sps = [sp1, sp2, sp4];
-        sl1.onchange = sl3.onchange = () => {
-            if (!stop) webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+        sl1.onchange = sl3.onchange = async () => {
+            if (!stop) await webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
         };
-        sp3.onclick = () => {
+        sp3.onclick = async () => {
             stop = true;
             let v = sl1.value;
             sl1.value = sl3.value;
@@ -286,13 +284,13 @@ class webTTS {
             sl2.value = sl4.value;
             sl4.value = v;
             stop = false;
-            webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+            await webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
         };
-        webTTS.setTextTable(langText, text, sps, languages);
+        await webTTS.setTextTable(langText, text, sps, languages);
     }
 
-    static setTextTable(langText, table, sps, languages) {
-        webTTS.stopSpeaking();
+    static async setTextTable(langText, table, sps, languages) {
+        await webTTS.stopSpeaking();
         for (let sp of sps) sp.speakTarget = [];
         table.innerHTML = "";
         let src = languages.map(lang => langText[lang]);
