@@ -81,6 +81,14 @@ class webTTS {
         }
     }
 
+    static speakAsync(uttr) {
+        return new Promise((resolve, _) => {
+            uttr.onend = () => resolve(true);
+            uttr.onerror = () => resolve(false);
+            speechSynthesis.speak(uttr);
+        });
+    }
+
     static stopSpeaking = () => false;
 
     static async speak(elem) {
@@ -93,46 +101,51 @@ class webTTS {
         }
     }
 
-    static speak1(lang, target) {
-        return new Promise((resolve, _) => {
-            let opt = lang.voice.selectedOptions;
-            if (!opt || opt.length == 0) return resolve(false);
-            let html = target.innerHTML;
-            let p = null;
-            let text = target.getAttribute("speak");
-            if (!text) {
-                p = new webTTS_Position(target);
-                text = p.text2;
-            }
-            if (text.trim() == "") {
-                resolve(null);
-                return;
-            }
-            let step = 0;
-            let speakend = cancel => {
-                speakend = () => false;
-                if (step == 1) target.innerHTML = html;
-                step = 2;
-                if (cancel) speechSynthesis.cancel();
-                resolve(cancel);
-                return cancel != null;
+    static async speak1(lang, target) {
+        const opt = lang.voice.selectedOptions;
+        if (!opt || opt.length == 0) return false;
+
+        const html = target.innerHTML;
+        let p = null;
+        let text = target.getAttribute("speak");
+        if (!text) {
+            p = new webTTS_Position(target);
+            text = p.text2;
+        }
+        if (text.trim() == "") return false;
+
+        const u = new SpeechSynthesisUtterance(text);
+        u.voice = lang.voice.selectedOptions[0].voice;
+        u.lang = u.voice.lang;
+        if (target.rate) u.rate = parseFloat(target.rate.value);
+        if (lang.pitch) u.pitch = lang.pitch;
+
+        let step = 0;
+        if (p) {
+            u.onboundary = ev => {
+                if (ev.name != "word" || step > 1) return;
+                step = 1;
+                target.innerHTML = p.getHTML(ev.charIndex, ev.charLength);
             };
-            webTTS.stopSpeaking = cancel => speakend(cancel ? cancel : [null]);
-            let u = new SpeechSynthesisUtterance(text);
-            u.voice = lang.voice.selectedOptions[0].voice;
-            u.lang = u.voice.lang;
-            if (target.rate) u.rate = parseFloat(target.rate.value);
-            if (lang.pitch) u.pitch = lang.pitch;
-            u.onend = u.onerror = () => speakend(null);
-            if (p) {
-                u.onboundary = ev => {
-                    if (ev.name != "word" || step > 1) return;
-                    step = 1;
-                    target.innerHTML = p.getHTML(ev.charIndex, ev.charLength);
-                };
+        }
+
+        let result = null;
+        webTTS.stopSpeaking = cancel => {
+            webTTS.stopSpeaking = () => false;
+            if (cancel) {
+                result = cancel;
+                speechSynthesis.cancel();
+                return true;
+            } else {
+                result = [null];
+                return false;
             }
-            speechSynthesis.speak(u);
-        });
+        };
+
+        await webTTS.speakAsync(u);
+        if (step == 1) target.innerHTML = html;
+        step = 2;
+        return result;
     }
 
     static async speakElem() {
