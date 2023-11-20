@@ -398,10 +398,10 @@ class webTTS_Position {
             this.pos1.push(p1);
             this.pos2.push(p2);
             if (!n) break;
-            let t1 = n.textContent, t2 = null;
-            if (n.nodeType != Node.TEXT_NODE) t2 = n.getAttribute("s");
-            this.rawtx.push(!t2);
-            if (!t2) t2 = t1;
+            const isText = n.nodeType == Node.TEXT_NODE;
+            const t1 = n.textContent;
+            const t2 = isText ? t1 : n.getAttribute("s") ?? "";
+            this.rawtx.push(isText);
             p1 += t1.length;
             p2 += t2.length;
             this.text1 += t1;
