@@ -340,11 +340,15 @@ class webTTS {
     }
 
     static readSource(pre, langs) {
+        return webTTS.readSourceText(pre.innerHTML, langs);
+    }
+
+    static readSourceText(text, langs) {
         let count = langs.length;
         let lines = Array(count).fill().map(() => []);
         let texts = Array(count).fill().map(() => []);
         let n = 0;
-        for (let line of (pre.innerHTML.trim() + "\n").split("\n")) {
+        for (let line of (text.trim() + "\n").split("\n")) {
             line = line.trim();
             if (line.length) {
                 lines[n % count].push(line);
