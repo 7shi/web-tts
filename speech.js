@@ -218,79 +218,92 @@ class webTTS {
     }
 
     static async initTable(source, button, text, ...languages) {
-        if (!languages.length) languages = [langs[0], langs[1]];
         const langText = {};
         for (const tr of Array.from(source.getElementsByTagName("tr"))) {
             langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
         }
         const langs = Object.keys(langText);
+        const coln = Math.min(source.columns ?? 2, langs.length);
+        if (!languages.length) {
+            languages = langs.slice(0, coln);
+        } else if (languages.length < coln) {
+            for (let i = 0; i < langs.length; i++) {
+                if (languages.includes(langs[i])) continue;
+                languages.push(langs[i]);
+                if (languages.length == coln) break;
+            }
+        }
         button.width = text.width = "100%";
         button.classList.add("sentences");
         text  .classList.add("langs");
-        const tr  = document.createElement("tr");
-        const td1 = document.createElement("td");
-        const td2 = document.createElement("td");
-        const ck1 = document.createElement("input");
-        const ck2 = document.createElement("input");
-        const xch = document.createElement("span");
-        const sl1 = document.createElement("select");
-        const sl2 = document.createElement("select");
-        const sl3 = document.createElement("select");
-        const sl4 = document.createElement("select");
+        const tr = document.createElement("tr");
+        const tds = Array.from({ length: coln }, () => document.createElement("td"));
+        const cks = Array.from({ length: coln }, () => document.createElement("input"));
+        const sls = Array.from({ length: coln }, () => document.createElement("select"));
+        const rts = Array.from({ length: coln }, () => document.createElement("select"));
+        const xchs = Array.from({ length: coln - 1 }, () => document.createElement("span"));
         const speechRates = [
             [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
         ];
-        text.rates = [sl2, sl4];
-        for (const sl of text.rates) {
+        text.rates = rts;
+        const w = Math.floor(100 / coln);
+        for (let i = 0; i < coln; i++) {
+            const td = tds[i];
+            if (i == 0) {
+                td.style.width = (w + 100 - w * coln) + "%";
+            } else {
+                td.style.width = w + "%";
+            }
+
+            const ck = cks[i];
+            ck.type = "checkbox";
+            ck.checked = true;
+
+            const rt = rts[i];
             for (const [value, text] of speechRates) {
                 let opt = document.createElement("option");
                 opt.value = value;
                 opt.textContent = text;
-                sl.appendChild(opt);
+                rt.appendChild(opt);
                 if (value == 1) opt.selected = true;
             }
+
+            const sl = sls[i];
+            for (const lang of langs) {
+                const opt = document.createElement("option");
+                opt.value = lang;
+                opt.textContent = webTTS.langs[lang].name;
+                if (lang == languages[i]) opt.selected = true;
+                sl.appendChild(opt);
+            }
+            let stop = false;
+            sl.onchange = async () => {
+                if (!stop) await webTTS.setTextTable(langText, text, cks, sls.map(x => x.value));
+            };
+
+            if (i > 0) {
+                const xch = xchs[i - 1];
+                xch.style.width = "2em";
+                xch.textContent = "⇆";
+                xch.classList.add("speak");
+                const n = i - 1;
+                xch.onclick = async () => {
+                    stop = true;
+                    [cks[n].checked, ck.checked] = [ck.checked, cks[n].checked];
+                    [rts[n].value, rt.value] = [rt.value, rts[n].value];
+                    [sls[n].value, sl.value] = [sl.value, sls[n].value];
+                    stop = false;
+                    await webTTS.setTextTable(langText, text, cks, sls.map(x => x.value));
+                };
+                td.appendChild(xch);
+            }
+
+            td.appendChild(ck);
+            td.appendChild(sl);
+            td.appendChild(rt);
+            tr.appendChild(td);
         }
-        td1.width = td2.width = "50%";
-        for (const ck of [ck1, ck2]) {
-            ck.type = "checkbox";
-            ck.checked = true;
-        }
-        xch.style.width = "2em";
-        xch.textContent = "⇆";
-        xch.classList.add("speak");
-        for (const lang of langs) {
-            const opt1 = document.createElement("option");
-            opt1.value = lang;
-            opt1.textContent = webTTS.langs[lang].name;
-            const opt2 = opt1.cloneNode(true);
-            if (lang == languages[0]) opt1.selected = true;
-            if (lang == languages[1]) opt2.selected = true;
-            sl1.appendChild(opt1);
-            sl3.appendChild(opt2);
-        }
-        td1.appendChild(ck1);
-        td1.appendChild(sl1);
-        td1.appendChild(sl2);
-        td2.appendChild(xch);
-        td2.appendChild(ck2);
-        td2.appendChild(sl3);
-        td2.appendChild(sl4);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
         button.appendChild(tr);
-        const cks = [ck1, ck2];
-        let stop = false;
-        sl1.onchange = sl3.onchange = async () => {
-            if (!stop) await webTTS.setTextTable(langText, text, cks, [sl1.value, sl3.value]);
-        };
-        xch.onclick = async () => {
-            stop = true;
-            [ck1.checked, ck2.checked] = [ck2.checked, ck1.checked];
-            [sl1.value, sl3.value] = [sl3.value, sl1.value];
-            [sl2.value, sl4.value] = [sl4.value, sl2.value];
-            stop = false;
-            await webTTS.setTextTable(langText, text, cks, [sl1.value, sl3.value]);
-        };
         await webTTS.setTextTable(langText, text, cks, languages);
     }
 
