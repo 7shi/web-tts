@@ -299,15 +299,15 @@ class webTTS {
 
     static async setTextTable(langText, table, sps, languages) {
         await webTTS.stopSpeaking();
-        for (let sp of sps) sp.speakTarget = [];
+        for (const sp of sps) sp.speakTarget = [];
         table.innerHTML = "";
-        let src = languages.map(lang => langText[lang]);
-        let len = Math.min(...src.map(x => x.length));
+        const src = languages.map(lang => langText[lang]);
+        const len = Math.min(...src.map(x => x.length));
         let prev = null;
         for (let i = 0; i < len; i++) {
-            let tr = document.createElement("tr");
-            let tds = src.map(x => x[i].cloneNode(true));
-            let buttons = [document.createElement("span")];
+            const tr = document.createElement("tr");
+            const tds = src.map(x => x[i].cloneNode(true));
+            const buttons = [document.createElement("span")];
             buttons[0].playStop = ["⇨", "■"];
             if (i == 0) {
                 sps[0].speakTarget.push(buttons[0]);
@@ -315,10 +315,11 @@ class webTTS {
                 prev.nextSpeak = buttons[0]; // make a linked list
             }
             prev = buttons[0];
-            for (let [j, td] of tds.entries()) {
+            for (let j = 0; j < tds.length; j++) {
+                const td = tds[j];
                 if (i == 0) td.width = "50%";
                 td.spans = Array.from(webTTS.getSpans(td));
-                let b = document.createElement("span");
+                const b = document.createElement("span");
                 b.playStop = ["▶", "■"];
                 buttons.push(b);
                 sps[j + 1].speakTarget.push(b);
@@ -326,14 +327,15 @@ class webTTS {
                 tr.appendChild(td);
             }
             tds[0].insertBefore(buttons[0], tds[0].firstChild);
-            for (let b of buttons) {
+            for (const b of buttons) {
                 b.speakTarget = [];
                 b.style.width = "1.5em";
                 webTTS.setSpeak(b);
             }
             for (let j = 0; j < tds[0].spans.length; j++) {
-                let spans = tds.map(td => td.spans[j]);
-                for (let [k, span] of spans.entries()) {
+                const spans = tds.map(td => td.spans[j]);
+                for (let k = 0; k < spans.length; k++) {
+                    const span = spans[k];
                     buttons[0    ].speakTarget.push(span);
                     buttons[k + 1].speakTarget.push(span);
                     span.language = webTTS.langs[languages[k]];
