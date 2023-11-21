@@ -230,15 +230,10 @@ class webTTS {
             langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
         }
         const langs = Object.keys(langText);
-        const coln = Math.min(source.columns ?? 2, langs.length);
-        if (!languages.length) {
+        const coln = languages.length;
+        if (coln == 0) {
+            coln = 2;
             languages = langs.slice(0, coln);
-        } else if (languages.length < coln) {
-            for (let i = 0; i < langs.length; i++) {
-                if (languages.includes(langs[i])) continue;
-                languages.push(langs[i]);
-                if (languages.length == coln) break;
-            }
         }
         button.width = text.width = "100%";
         button.classList.add("sentences");
