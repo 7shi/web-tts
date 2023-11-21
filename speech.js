@@ -6,26 +6,10 @@ class webTTS {
         if (languages) webTTS.langs = languages;
         if (table) {
             table.classList.add("sentences");
-            for (let key in languages) {
-                let value = languages[key];
-                let tr  = document.createElement("tr");
-                let td1 = document.createElement("td");
-                let td2 = document.createElement("td");
-                let sel = document.createElement("select");
-                let lang = value.lang ?? key;
-                td1.setAttribute("key", key);
-                td1.setAttribute("language", lang);
-                td1.setAttribute("speak", value.test);
-                webTTS.setSpeak(td1);
-                sel.classList.add("voicelist");
-                sel.setAttribute("language", lang);
-                if (value.country) sel.setAttribute("country", value.country);
-                if (value.prefer ) sel.setAttribute("prefer" , value.prefer);
-                td2.appendChild(sel);
-                tr.appendChild(td1);
-                tr.appendChild(td2);
+            for (let kv of Object.entries(languages)) {
+                let tr = document.createElement("tr");
+                webTTS.addLanguage(tr, ...kv);
                 table.appendChild(tr);
-                value.voice = sel;
             }
         }
         if (!window.speechSynthesis) return;
@@ -36,6 +20,27 @@ class webTTS {
             webTTS.voices = speechSynthesis.getVoices();
         }
         Array.from(document.getElementsByClassName("voicelist")).forEach(webTTS.addVoices);
+    }
+
+    static addLanguage(tr, key, value) {
+        let td1 = document.createElement("td");
+        let td2 = document.createElement("td");
+        let sel = document.createElement("select");
+        let lang = value.lang ?? key;
+        td1.setAttribute("key", key);
+        td1.setAttribute("language", lang);
+        if (value.test) {
+            td1.setAttribute("speak", value.test);
+        }
+        webTTS.setSpeak(td1);
+        sel.classList.add("voicelist");
+        sel.setAttribute("language", lang);
+        if (value.country) sel.setAttribute("country", value.country);
+        if (value.prefer) sel.setAttribute("prefer", value.prefer);
+        td2.appendChild(sel);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        value.voice = sel;
     }
 
     static addVoices(elem) {
@@ -68,16 +73,18 @@ class webTTS {
     }
 
     static setSpeak(elem) {
-        elem.classList.add("speak");
         if (elem.playStop) {
             elem.textContent = elem.playStop[0];
         } else if (!elem.textContent) {
             elem.language = webTTS.langs[elem.getAttribute("key")];
             elem.textContent = elem.language.name;
         }
-        if (!elem.speak) {
-            elem.speak = webTTS.speakElem;
-            elem.addEventListener("click", () => webTTS.speak(elem));
+        if (elem.hasAttribute("speak") || elem.speakTarget) {
+            elem.classList.add("speak");
+            if (!elem.speak) {
+                elem.speak = webTTS.speakElem;
+                elem.addEventListener("click", () => webTTS.speak(elem));
+            }
         }
     }
 
