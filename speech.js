@@ -99,10 +99,7 @@ class webTTS {
         await webTTS.stopSpeaking();
         if (cancel) return;
 
-        while (elem) {
-            await elem.speak();
-            elem = elem.nextSpeak;
-        }
+        await elem.speak();
     }
 
     static async speak1(lang, target) {
@@ -150,18 +147,26 @@ class webTTS {
     }
 
     static async speakElem() {
-        this.classList.add("speaking");
-        if (this.playStop) this.textContent = this.playStop[1];
+        for (let elem = this; elem; elem = elem.nextSpeak) {
+            if (await webTTS.speakElem1(elem)) return true;
+        }
+        return false;
+    }
+
+    static async speakElem1(elem) {
+        elem.classList.add("speaking");
+        if (elem.playStop) elem.textContent = elem.playStop[1];
         let cancel = false;
-        if (this.speakTarget) {
-            for (let t of this.speakTarget) {
+        if (elem.speakTarget) {
+            for (let t of elem.speakTarget) {
                 if (cancel = await t.speak()) break;
             }
         } else {
-            cancel = await webTTS.speak1(this.language, this);
+            cancel = await webTTS.speak1(elem.language, elem);
         }
-        if (this.playStop) this.textContent = this.playStop[0];
-        this.classList.remove("speaking");
+        if (elem.playStop) elem.textContent = elem.playStop[0];
+        elem.classList.remove("speaking");
+        if (cancel) return true;
         return cancel;
     }
 
