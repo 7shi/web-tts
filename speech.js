@@ -303,19 +303,25 @@ class webTTS {
         table.innerHTML = "";
         let src = languages.map(lang => langText[lang]);
         let len = Math.min(...src.map(x => x.length));
+        let prev = null;
         for (let i = 0; i < len; i++) {
             let tr = document.createElement("tr");
             let tds = src.map(x => x[i].cloneNode(true));
             let buttons = [document.createElement("span")];
-            sps[0].speakTarget.push(buttons[0]);
             buttons[0].playStop = ["⇨", "■"];
+            if (i == 0) {
+                sps[0].speakTarget.push(buttons[0]);
+            } else {
+                prev.nextSpeak = buttons[0]; // make a linked list
+            }
+            prev = buttons[0];
             for (let [j, td] of tds.entries()) {
                 if (i == 0) td.width = "50%";
                 td.spans = Array.from(webTTS.getSpans(td));
                 let b = document.createElement("span");
+                b.playStop = ["▶", "■"];
                 buttons.push(b);
                 sps[j + 1].speakTarget.push(b);
-                b.playStop = ["▶", "■"];
                 td.insertBefore(b, td.spans[0]);
                 tr.appendChild(td);
             }
