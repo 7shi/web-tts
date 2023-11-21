@@ -158,7 +158,9 @@ class webTTS {
         if (elem.playStop) elem.textContent = elem.playStop[1];
         let cancel = false;
         if (elem.speakTarget) {
-            for (let t of elem.speakTarget) {
+            for (let i = 0; i < elem.speakTarget.length; i++) {
+                if (elem.speakCheck && !elem.speakCheck[i].checked) continue;
+                const t = elem.speakTarget[i];
                 if (cancel = await t.speak()) break;
             }
         } else {
@@ -216,32 +218,31 @@ class webTTS {
     }
 
     static async initTable(source, button, text, ...languages) {
-        if (!languages.length) languages = [ls[0], ls[1]];
-        let langText = {};
-        for (let tr of Array.from(source.getElementsByTagName("tr"))) {
+        if (!languages.length) languages = [langs[0], langs[1]];
+        const langText = {};
+        for (const tr of Array.from(source.getElementsByTagName("tr"))) {
             langText[tr.getAttribute("language")] = Array.from(tr.getElementsByTagName("td"));
         }
-        let ls = Object.keys(langText);
+        const langs = Object.keys(langText);
         button.width = text.width = "100%";
         button.classList.add("sentences");
         text  .classList.add("langs");
-        let tr  = document.createElement("tr");
-        let td1 = document.createElement("td");
-        let td2 = document.createElement("td");
-        let sp1 = document.createElement("span");
-        let sp2 = document.createElement("span");
-        let sp3 = document.createElement("span");
-        let sp4 = document.createElement("span");
-        let sl1 = document.createElement("select");
-        let sl2 = document.createElement("select");
-        let sl3 = document.createElement("select");
-        let sl4 = document.createElement("select");
-        let speechRates = [
+        const tr  = document.createElement("tr");
+        const td1 = document.createElement("td");
+        const td2 = document.createElement("td");
+        const ck1 = document.createElement("input");
+        const ck2 = document.createElement("input");
+        const xch = document.createElement("span");
+        const sl1 = document.createElement("select");
+        const sl2 = document.createElement("select");
+        const sl3 = document.createElement("select");
+        const sl4 = document.createElement("select");
+        const speechRates = [
             [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
         ];
         text.rates = [sl2, sl4];
-        for (let sl of text.rates) {
-            for (let [value, text] of speechRates) {
+        for (const sl of text.rates) {
+            for (const [value, text] of speechRates) {
                 let opt = document.createElement("option");
                 opt.value = value;
                 opt.textContent = text;
@@ -250,56 +251,51 @@ class webTTS {
             }
         }
         td1.width = td2.width = "50%";
-        for (let sp of [sp1, sp2, sp3, sp4]) sp.style.width = "2em";
-        sp1.playStop = ["⇨", "■"];
-        sp2.playStop = sp4.playStop = ["▶", "■"];
-        sp3.textContent = "⇆";
-        for (let lang of ls) {
-            let opt1 = document.createElement("option");
+        for (const ck of [ck1, ck2]) {
+            ck.type = "checkbox";
+            ck.checked = true;
+        }
+        xch.style.width = "2em";
+        xch.textContent = "⇆";
+        xch.classList.add("speak");
+        for (const lang of langs) {
+            const opt1 = document.createElement("option");
             opt1.value = lang;
             opt1.textContent = webTTS.langs[lang].name;
-            let opt2 = opt1.cloneNode(true);
+            const opt2 = opt1.cloneNode(true);
             if (lang == languages[0]) opt1.selected = true;
             if (lang == languages[1]) opt2.selected = true;
             sl1.appendChild(opt1);
             sl3.appendChild(opt2);
         }
-        webTTS.setSpeak(sp1);
-        webTTS.setSpeak(sp2);
-        webTTS.setSpeak(sp4);
-        sp3.classList.add("speak");
-        td1.appendChild(sp1);
-        td1.appendChild(sp2);
+        td1.appendChild(ck1);
         td1.appendChild(sl1);
         td1.appendChild(sl2);
-        td2.appendChild(sp3);
-        td2.appendChild(sp4);
+        td2.appendChild(xch);
+        td2.appendChild(ck2);
         td2.appendChild(sl3);
         td2.appendChild(sl4);
         tr.appendChild(td1);
         tr.appendChild(td2);
         button.appendChild(tr);
-        let stop = false, sps = [sp1, sp2, sp4];
+        const cks = [ck1, ck2];
+        let stop = false;
         sl1.onchange = sl3.onchange = async () => {
-            if (!stop) await webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+            if (!stop) await webTTS.setTextTable(langText, text, cks, [sl1.value, sl3.value]);
         };
-        sp3.onclick = async () => {
+        xch.onclick = async () => {
             stop = true;
-            let v = sl1.value;
-            sl1.value = sl3.value;
-            sl3.value = v;
-            v = sl2.value;
-            sl2.value = sl4.value;
-            sl4.value = v;
+            [ck1.checked, ck2.checked] = [ck2.checked, ck1.checked];
+            [sl1.value, sl3.value] = [sl3.value, sl1.value];
+            [sl2.value, sl4.value] = [sl4.value, sl2.value];
             stop = false;
-            await webTTS.setTextTable(langText, text, sps, [sl1.value, sl3.value]);
+            await webTTS.setTextTable(langText, text, cks, [sl1.value, sl3.value]);
         };
-        await webTTS.setTextTable(langText, text, sps, languages);
+        await webTTS.setTextTable(langText, text, cks, languages);
     }
 
-    static async setTextTable(langText, table, sps, languages) {
+    static async setTextTable(langText, table, cks, languages) {
         await webTTS.stopSpeaking();
-        for (const sp of sps) sp.speakTarget = [];
         table.innerHTML = "";
         const src = languages.map(lang => langText[lang]);
         const len = Math.min(...src.map(x => x.length));
@@ -310,9 +306,8 @@ class webTTS {
             const buttons = [document.createElement("span")];
             buttons[0].playStop = ["⇨", "■"];
             buttons[0].speakTarget = [];
-            if (i == 0) {
-                sps[0].speakTarget.push(buttons[0]);
-            } else {
+            buttons[0].speakCheck = cks;
+            if (prev) {
                 prev.nextSpeak = buttons[0]; // make a linked list
             }
             prev = buttons[0];
@@ -325,7 +320,6 @@ class webTTS {
                 b.playStop = ["▶", "■"];
                 buttons.push(b);
                 buttons[0].speakTarget.push(b);
-                sps[j + 1].speakTarget.push(b);
                 td.insertBefore(b, td.spans[0]);
                 tr.appendChild(td);
             }
