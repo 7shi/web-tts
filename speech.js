@@ -309,6 +309,7 @@ class webTTS {
             const tds = src.map(x => x[i].cloneNode(true));
             const buttons = [document.createElement("span")];
             buttons[0].playStop = ["⇨", "■"];
+            buttons[0].speakTarget = [];
             if (i == 0) {
                 sps[0].speakTarget.push(buttons[0]);
             } else {
@@ -320,15 +321,16 @@ class webTTS {
                 if (i == 0) td.width = "50%";
                 td.spans = Array.from(webTTS.getSpans(td));
                 const b = document.createElement("span");
+                b.speakTarget = [];
                 b.playStop = ["▶", "■"];
                 buttons.push(b);
+                buttons[0].speakTarget.push(b);
                 sps[j + 1].speakTarget.push(b);
                 td.insertBefore(b, td.spans[0]);
                 tr.appendChild(td);
             }
             tds[0].insertBefore(buttons[0], tds[0].firstChild);
             for (const b of buttons) {
-                b.speakTarget = [];
                 b.style.width = "1.5em";
                 webTTS.setSpeak(b);
             }
@@ -336,7 +338,6 @@ class webTTS {
                 const spans = tds.map(td => td.spans[j]);
                 for (let k = 0; k < spans.length; k++) {
                     const span = spans[k];
-                    buttons[0    ].speakTarget.push(span);
                     buttons[k + 1].speakTarget.push(span);
                     span.language = webTTS.langs[languages[k]];
                     span.spans = spans;
