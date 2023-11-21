@@ -181,7 +181,7 @@ class webTTS {
         let [t, b] = webTTS.getTopBottom(this);
         let ih = innerHeight;
         if (0 <= t && t < ih && ih <= b + ih / 10) {
-            let top = pageYOffset + b - ih * 2 / 3;
+            let top = scrollY + b - ih * 2 / 3;
             scroll({ top, behavior: "smooth" });
         }
         for (let sp of this.spans)
