@@ -103,7 +103,30 @@ class webTTS_Speak {
         });
     }
 
-    static setSpeak(elem) {
+    static setSpeak(elem, language = "", ...targets) {
+        // targets: {lang1: {span1, span2, ...}, ...}
+        if (targets.length) {
+            elem.speakTarget = [];
+            for (const t of targets) {
+                elem.speakTarget.push(t);
+                if (!language) continue;
+                t.language = webTTS.langs[language];
+                t.spans = elem.speakTarget;
+                t.speak = webTTS_Speak.speakSpan; // use as `t.speak()`
+            }
+        }
+        if (targets && typeof targets == "string") {
+            for (const [lang, spans] of Object.entries(targets)) {
+                if (!lang) {
+                    elem.speakTarget = elem.speakTarget.concat(spans);
+                    continue;
+                }
+                if (!(lang in webTTS.langs)) {
+                    console.error("unknown language: " + lang);
+                    continue;
+                }
+            }
+        }
         if (elem.playStop) {
             elem.textContent = elem.playStop[0];
         } else if (!elem.textContent) {
