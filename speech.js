@@ -16,6 +16,17 @@ class webTTS {
 }
 
 class webTTS_Voice {
+    static async getVoices() {
+        if (!window.speechSynthesis) return [];
+        const ready = new Promise(resolve => speechSynthesis.onvoiceschanged = resolve);
+        let ret = speechSynthesis.getVoices();
+        if (!ret.length) {
+            await ready;
+            ret = speechSynthesis.getVoices();
+        }
+        return ret;
+    }
+
     static async initVoices(languages, table) {
         if (languages) webTTS.langs = languages;
         if (table) {
@@ -26,13 +37,8 @@ class webTTS_Voice {
                 table.appendChild(tr);
             }
         }
-        if (!window.speechSynthesis) return;
-
-        webTTS.voices = speechSynthesis.getVoices();
-        if (!webTTS.voices.length) {
-            await new Promise(resolve => speechSynthesis.onvoiceschanged = resolve);
-            webTTS.voices = speechSynthesis.getVoices();
-        }
+        if (!webTTS.voices.length) webTTS.voices = await webTTS_Voice.getVoices();
+        if (!webTTS.voices.length) return;
         Array.from(document.getElementsByClassName("voicelist")).forEach(webTTS_Voice.addVoices);
     }
 
