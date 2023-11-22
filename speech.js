@@ -392,14 +392,14 @@ class webTTS {
     }
 
     static readSourceMarkdown(text, lineBreak = false) {
-        const rows = webTTS.trim(text.split("\n")).map(row => {
-            row = row.trim();
-            if (row.startsWith("|") && row.endsWith("|")) {
-                row = row.substring(1, row.length - 1);
+        const rows = webTTS.trim(text.split("\n")).map(line => {
+            line = line.trim();
+            if (line.startsWith("|") && line.endsWith("|")) {
+                line = line.substring(1, line.length - 1);
             }
-            return row.split("|").map(x => x.trim());
+            return line.split("|").map(x => x.trim());
         });
-        return webTTS.readSourceTable(rows.slice(1), rows[0], lineBreak);
+        return webTTS.readSourceTable(rows.slice(2), rows[0], lineBreak);
     }
 
     static readSourceText(text, langs, lineBreak = false) {
