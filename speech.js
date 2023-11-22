@@ -272,6 +272,7 @@ class webTTS {
 
             const sl = sls[i];
             for (const lang of langs) {
+                if (!(lang in webTTS.langs)) continue;
                 const opt = document.createElement("option");
                 opt.value = lang;
                 opt.textContent = webTTS.langs[lang].name;
@@ -314,6 +315,7 @@ class webTTS {
         table.innerHTML = "";
         const src = languages.map(lang => langText[lang]);
         const len = Math.min(...src.map(x => x.length));
+        const hasHeader = "" in langText;
         let prev = null;
         for (let i = 0; i < len; i++) {
             const tr = document.createElement("tr");
@@ -328,7 +330,7 @@ class webTTS {
             prev = buttons[0];
             for (let j = 0; j < tds.length; j++) {
                 const td = tds[j];
-                if (i == 0) td.width = "50%";
+                if (i == 0) td.style.width = cks[j].parentNode.style.width;
                 td.spans = Array.from(webTTS.getSpans(td));
                 const b = document.createElement("span");
                 b.speakTarget = [];
@@ -342,6 +344,12 @@ class webTTS {
             for (const b of buttons) {
                 b.style.width = "1.5em";
                 webTTS.setSpeak(b);
+            }
+            if (hasHeader) {
+                const hspans = Array.from(webTTS.getSpans(langText[""][i]));
+                if (hspans.length) {
+                    tds[0].insertBefore(hspans[0].cloneNode(true), tds[0].spans[0]);
+                }
             }
             for (let j = 0; j < tds[0].spans.length; j++) {
                 const spans = tds.map(td => td.spans[j]);
@@ -449,18 +457,22 @@ class webTTS {
         return stringArray.slice(start, end);
     }
 
-    static convertTable(texts, langs) {
-        let count = langs.length;
-        let table = document.createElement("table");
-        for (let i = 0; i < count; i++) {
-            let tr = document.createElement("tr");
-            let lang = langs[i];
+    static convertTable(texts, langs, hasHeader = false) {
+        if (hasHeader) langs = ["", ...langs];
+        const table = document.createElement("table");
+        for (let i = 0; i < langs.length; i++) {
+            const tr = document.createElement("tr");
+            const lang = langs[i];
             tr.setAttribute("language", lang);
-            let s = lang == "ja" || lang == "zh" ? "" : " ";
-            let span = "</span>" + s + "<span>";
-            for (let t of texts[i]) {
-                let td = document.createElement("td");
-                td.innerHTML = "<span>" + t.join(span) + "</span>";
+            const s = lang == "ja" || lang == "zh" ? "" : " ";
+            const span = "</span>" + s + "<span>";
+            for (const t of texts[i]) {
+                const td = document.createElement("td");
+                let html = "<span>" + t.join(span) + "</span>";
+                if (!lang) {
+                    html = !t || (t.length == 1 && !t[0]) ? "" : `<span>${html} </span>`;
+                }
+                td.innerHTML = html;
                 tr.appendChild(td);
             }
             table.appendChild(tr);
