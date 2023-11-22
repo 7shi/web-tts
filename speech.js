@@ -382,12 +382,24 @@ class webTTS {
 
     static readSourceAuto(text, langs, lineBreak = false) {
         if (langs.length == 0) {
+            return webTTS.readSourceMarkdown(text, lineBreak);
         } else if (text.includes("\t")) {
             text = text.trim().replace(/\n/g, "\n\n").replace(/\t/g, "\n");
         } else if (text.includes("    ")) {
             text = text.replace(/\n/g, "\n\n").replace(/    /g, "\n");
         }
         return webTTS.readSourceText(text, langs, lineBreak);
+    }
+
+    static readSourceMarkdown(text, lineBreak = false) {
+        const rows = webTTS.trim(text.split("\n")).map(row => {
+            row = row.trim();
+            if (row.startsWith("|") && row.endsWith("|")) {
+                row = row.substring(1, row.length - 1);
+            }
+            return row.split("|").map(x => x.trim());
+        });
+        return webTTS.readSourceTable(rows.slice(1), rows[0], lineBreak);
     }
 
     static readSourceText(text, langs, lineBreak = false) {
