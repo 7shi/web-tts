@@ -281,7 +281,7 @@ class webTTS_Table {
             coln = 2;
             languages = langs.slice(0, coln);
         }
-        button.width = text.width = "100%";
+        button.style.width = text.style.width = "100%";
         button.classList.add("sentences");
         text  .classList.add("langs");
         const tr = document.createElement("tr");
