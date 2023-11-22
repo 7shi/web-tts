@@ -376,31 +376,65 @@ class webTTS {
         }
     }
 
-    static readSource(pre, langs) {
-        return webTTS.readSourceText(pre.innerHTML, langs);
+    static readSource(pre, langs, lineBreak = false) {
+        return webTTS.readSourceAuto(pre.innerHTML, langs, lineBreak);
     }
 
-    static readSourceText(text, langs) {
-        let count = langs.length;
-        let lines = Array(count).fill().map(() => []);
-        let texts = Array(count).fill().map(() => []);
-        let n = 0;
-        for (let line of (text.trim() + "\n").split("\n")) {
-            line = line.trim();
-            if (line.length) {
-                lines[n % count].push(line);
-                n++;
+    static readSourceAuto(text, langs, lineBreak = false) {
+        if (langs.length == 0) {
+        } else if (text.includes("\t")) {
+            text = text.trim().replace(/\n/g, "\n\n").replace(/\t/g, "\n");
+        } else if (text.includes("    ")) {
+            text = text.replace(/\n/g, "\n\n").replace(/    /g, "\n");
+        }
+        return webTTS.readSourceText(text, langs, lineBreak);
+    }
+
+    static readSourceText(text, langs, lineBreak = false) {
+        // text: "1\n2\n3\n\n4\n5\n6" => table: [["1", "2", "3"], [], ["4", "5", "6"]]]
+        const lines = webTTS.trim((text.trim() + "\n").split("\n"));
+        const table = [];
+        let i = 0;
+        while (i < lines.length) {
+            if (lines[i].trim()) {
+                table.push(lines.slice(i, i + langs.length));
+                i += langs.length;
             } else {
-                let len = lines[0].length;
+                table.push([]);
+                i++;
+            }
+        }
+        return webTTS.readSourceTable(table, langs, lineBreak);
+    }
+
+    static readSourceTable(table, langs, lineBreak = false) {
+        const count = langs.length;
+        const lines = Array(count).fill().map(() => []);
+        const texts = Array(count).fill().map(() => []);
+        for (const row of table.concat([[]])) {
+            if (row.length) {
                 for (let i = 0; i < count; i++) {
-                    if (lines[i].length < len) lines[i].push("");
-                    texts[i].push(lines[i]);
+                    lines[i].push(i < row.length ? row[i] : "");
                 }
-                lines = Array(count).fill().map(() => []);
-                n = 0;
+            }
+            if (!row.length || lineBreak) {
+                for (let i = 0; i < count; i++) {
+                    if (lines[i].length) {
+                        texts[i].push(lines[i]);
+                        lines[i] = [];
+                    }
+                }
             }
         }
         return texts;
+    }
+
+    static trim(stringArray) {
+        let start = 0;
+        while (start < stringArray.length && stringArray[start].trim() == "") start++;
+        let end = stringArray.length;
+        while (end > start && stringArray[end - 1].trim() == "") end--;
+        return stringArray.slice(start, end);
     }
 
     static convertTable(texts, langs) {
