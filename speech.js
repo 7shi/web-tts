@@ -166,7 +166,7 @@ class webTTS {
         let cancel = false;
         if (elem.speakTarget) {
             for (let i = 0; i < elem.speakTarget.length; i++) {
-                if (elem.speakCheck && !elem.speakCheck[i].checked) continue;
+                if (elem.speakCheck && !elem.speakCheck[i % elem.speakCheck.length].checked) continue;
                 const t = elem.speakTarget[i];
                 if (cancel = await t.speak()) break;
             }
@@ -322,7 +322,6 @@ class webTTS {
             const tds = src.map(x => x[i].cloneNode(true));
             const buttons = [document.createElement("span")];
             buttons[0].playStop = ["⇨", "■"];
-            buttons[0].speakTarget = [];
             buttons[0].speakCheck = cks;
             if (prev) {
                 prev.nextSpeak = buttons[0]; // make a linked list
@@ -333,15 +332,14 @@ class webTTS {
                 if (i == 0) td.style.width = cks[j].parentNode.style.width;
                 td.spans = Array.from(webTTS.getSpans(td));
                 const b = document.createElement("span");
-                b.speakTarget = [];
                 b.playStop = ["▶", "■"];
                 buttons.push(b);
-                buttons[0].speakTarget.push(b);
                 td.insertBefore(b, td.spans[0]);
                 tr.appendChild(td);
             }
             tds[0].insertBefore(buttons[0], tds[0].firstChild);
             for (const b of buttons) {
+                b.speakTarget = [];
                 b.style.width = "1.5em";
                 webTTS.setSpeak(b);
             }
@@ -355,6 +353,7 @@ class webTTS {
                 const spans = tds.map(td => td.spans[j]);
                 for (let k = 0; k < spans.length; k++) {
                     const span = spans[k];
+                    buttons[0    ].speakTarget.push(span);
                     buttons[k + 1].speakTarget.push(span);
                     span.language = webTTS.langs[languages[k]];
                     span.spans = spans;
