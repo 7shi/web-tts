@@ -2,13 +2,27 @@ class webTTS {
     static langs  = {};
     static voices = [];
 
+    static async stopSpeakingDefault() {}
+    static stopSpeaking = webTTS.stopSpeakingDefault;
+
+    static copyStaticMethods(cls) {
+        const methods = Object.getOwnPropertyDescriptors(webTTS);
+        for (const name of Object.getOwnPropertyNames(cls)) {
+            if (!(name in methods) && typeof cls[name] == "function") {
+                webTTS[name] = cls[name];
+            }
+        }
+    }
+}
+
+class webTTS_Voice {
     static async initVoices(languages, table) {
         if (languages) webTTS.langs = languages;
         if (table) {
             table.classList.add("sentences");
             for (let kv of Object.entries(languages)) {
                 let tr = document.createElement("tr");
-                webTTS.addLanguage(tr, ...kv);
+                webTTS_Voice.addLanguage(tr, ...kv);
                 table.appendChild(tr);
             }
         }
@@ -19,7 +33,7 @@ class webTTS {
             await new Promise(resolve => speechSynthesis.onvoiceschanged = resolve);
             webTTS.voices = speechSynthesis.getVoices();
         }
-        Array.from(document.getElementsByClassName("voicelist")).forEach(webTTS.addVoices);
+        Array.from(document.getElementsByClassName("voicelist")).forEach(webTTS_Voice.addVoices);
     }
 
     static addLanguage(tr, key, value) {
@@ -32,7 +46,7 @@ class webTTS {
         if (value.test) {
             td1.setAttribute("speak", value.test);
         }
-        webTTS.setSpeak(td1);
+        webTTS_Speak.setSpeak(td1);
         sel.classList.add("voicelist");
         sel.setAttribute("language", lang);
         if (value.country) sel.setAttribute("country", value.country);
@@ -71,6 +85,17 @@ class webTTS {
         if (prf) sel = prf; else if (nat) sel = nat;
         if (sel) sel.selected = true;
     }
+}
+webTTS.copyStaticMethods(webTTS_Voice);
+
+class webTTS_Speak {
+    static speakAsync(uttr) {
+        return new Promise((resolve, reject) => {
+            uttr.onend = () => resolve();
+            uttr.onerror = ev => reject(ev);
+            speechSynthesis.speak(uttr);
+        });
+    }
 
     static setSpeak(elem) {
         if (elem.playStop) {
@@ -82,22 +107,11 @@ class webTTS {
         if (elem.hasAttribute("speak") || elem.speakTarget) {
             elem.classList.add("speak");
             if (!elem.speak) {
-                elem.speak = webTTS.speakElem;
-                elem.addEventListener("click", () => webTTS.speak(elem));
+                elem.speak = webTTS_Speak.speakElem;
+                elem.addEventListener("click", () => webTTS_Speak.speak(elem));
             }
         }
     }
-
-    static speakAsync(uttr) {
-        return new Promise((resolve, _) => {
-            uttr.onend = () => resolve(true);
-            uttr.onerror = () => resolve(false);
-            speechSynthesis.speak(uttr);
-        });
-    }
-
-    static async stopSpeakingDefault() {}
-    static stopSpeaking = webTTS.stopSpeakingDefault;
 
     static async speak(elem) {
         if (!window.speechSynthesis) return;
@@ -142,7 +156,11 @@ class webTTS {
             cancel = resolve;
             speechSynthesis.cancel();
         });
-        await webTTS.speakAsync(u);
+        try {
+            await webTTS_Speak.speakAsync(u);
+        } catch {
+            // ignore error
+        }
         if (step == 1) target.innerHTML = html;
         step = 2;
         webTTS.stopSpeaking = webTTS.stopSpeakingDefault;
@@ -154,8 +172,9 @@ class webTTS {
     }
 
     static async speakElem() {
+        // `this` is set because of calling from `elem.speak()`
         for (let elem = this; elem; elem = elem.nextSpeak) {
-            if (await webTTS.speakElem1(elem)) return true;
+            if (await webTTS_Speak.speakElem1(elem)) return true;
         }
         return false;
     }
@@ -171,7 +190,7 @@ class webTTS {
                 if (cancel = await t.speak()) break;
             }
         } else {
-            cancel = await webTTS.speak1(elem.language, elem);
+            cancel = await webTTS_Speak.speak1(elem.language, elem);
         }
         if (elem.playStop) elem.textContent = elem.playStop[0];
         elem.classList.remove("speaking");
@@ -187,7 +206,8 @@ class webTTS {
     }
 
     static async speakSpan() {
-        let [t, b] = webTTS.getTopBottom(this);
+        // `this` is set because of calling from `elem.speak()`
+        let [t, b] = webTTS_Speak.getTopBottom(this);
         let ih = innerHeight;
         if (0 <= t && t < ih && ih <= b + ih / 10) {
             let top = scrollY + b - ih * 2 / 3;
@@ -195,33 +215,30 @@ class webTTS {
         }
         for (let sp of this.spans)
             sp.classList.add(this == sp ? "speaking2" : "speaking3");
-        let cancel = await webTTS.speak1(this.language, this);
+        let cancel = await webTTS_Speak.speak1(this.language, this);
         for (let sp of this.spans)
             sp.classList.remove(this == sp ? "speaking2" : "speaking3");
         return cancel;
     }
+}
+webTTS.copyStaticMethods(webTTS_Speak);
 
+class webTTS_Table {
     static spanTarget = null;
 
     static spanEnter(ev) {
-        if (webTTS.spanTarget) webTTS.spanLeave(null);
+        if (webTTS_Table.spanTarget) webTTS_Table.spanLeave(null);
         let t = ev.target;
         if (!t.spans || t.classList.contains("speaking2") || t.classList.contains("speaking3"))
             return;
         for (let span of t.spans) span.classList.add("hovering");
-        webTTS.spanTarget = ev.target;
+        webTTS_Table.spanTarget = ev.target;
     }
 
     static spanLeave(ev) {
-        if (ev && ev.target != webTTS.spanTarget) return;
-        for (let span of webTTS.spanTarget.spans) span.classList.remove("hovering");
-        webTTS.spanTarget = null;
-    }
-
-    static* getSpans(elem) {
-        for (let n = elem.firstChild; n; n = n.nextSibling) {
-            if (n.tagName == "SPAN") yield n;
-        }
+        if (ev && ev.target != webTTS_Table.spanTarget) return;
+        for (let span of webTTS_Table.spanTarget.spans) span.classList.remove("hovering");
+        webTTS_Table.spanTarget = null;
     }
 
     static async initTable(source, button, text, ...languages) {
@@ -281,7 +298,7 @@ class webTTS {
             }
             let stop = false;
             sl.onchange = async () => {
-                if (!stop) await webTTS.setTextTable(langText, text, cks, sls.map(x => x.value));
+                if (!stop) await webTTS_Table.setTextTable(langText, text, cks, sls.map(x => x.value));
             };
 
             if (i > 0) {
@@ -296,7 +313,7 @@ class webTTS {
                     [rts[n].value, rt.value] = [rt.value, rts[n].value];
                     [sls[n].value, sl.value] = [sl.value, sls[n].value];
                     stop = false;
-                    await webTTS.setTextTable(langText, text, cks, sls.map(x => x.value));
+                    await webTTS_Table.setTextTable(langText, text, cks, sls.map(x => x.value));
                 };
                 td.appendChild(xch);
             }
@@ -307,7 +324,7 @@ class webTTS {
             tr.appendChild(td);
         }
         button.appendChild(tr);
-        await webTTS.setTextTable(langText, text, cks, languages);
+        await webTTS_Table.setTextTable(langText, text, cks, languages);
     }
 
     static async setTextTable(langText, table, cks, languages) {
@@ -330,7 +347,7 @@ class webTTS {
             for (let j = 0; j < tds.length; j++) {
                 const td = tds[j];
                 if (i == 0) td.style.width = cks[j].parentNode.style.width;
-                td.spans = Array.from(webTTS.getSpans(td));
+                td.spans = Array.from(webTTS_Table.getSpans(td));
                 const b = document.createElement("span");
                 b.playStop = ["▶", "■"];
                 buttons.push(b);
@@ -341,10 +358,10 @@ class webTTS {
             for (const b of buttons) {
                 b.speakTarget = [];
                 b.style.width = "1.5em";
-                webTTS.setSpeak(b);
+                webTTS_Speak.setSpeak(b);
             }
             if (hasHeader) {
-                const hspans = Array.from(webTTS.getSpans(langText[""][i]));
+                const hspans = Array.from(webTTS_Table.getSpans(langText[""][i]));
                 if (hspans.length) {
                     tds[0].insertBefore(hspans[0].cloneNode(true), tds[0].spans[0]);
                 }
@@ -357,103 +374,24 @@ class webTTS {
                     buttons[k + 1].speakTarget.push(span);
                     span.language = webTTS.langs[languages[k]];
                     span.spans = spans;
-                    span.speak = webTTS.speakSpan;
+                    span.speak = webTTS_Speak.speakSpan;
                     span.rate  = table.rates[k];
-                    span.addEventListener("mouseenter", webTTS.spanEnter);
-                    span.addEventListener("mouseleave", webTTS.spanLeave);
+                    span.addEventListener("mouseenter", webTTS_Table.spanEnter);
+                    span.addEventListener("mouseleave", webTTS_Table.spanLeave);
                 }
             }
             table.appendChild(tr);
         }
     }
 
-    static setSpeakText(source, lang, words) {
-        for (let tr of Array.from(source.getElementsByTagName("tr"))) {
-            if (tr.getAttribute("language") != lang) continue;
-            for (let td of Array.from(tr.getElementsByTagName("td"))) {
-                for (let span of Array.from(webTTS.getSpans(td))) {
-                    let s1 = span.innerHTML, s2 = s1;
-                    for (let src in words) {
-                        let dst = '<span s="' + words[src] + '">$&</span>';
-                        s2 = s2.replace(RegExp(src, "g"), dst);
-                    }
-                    if (s1 != s2) span.innerHTML = s2;
-                }
-            }
+    static * getSpans(elem) {
+        for (let n = elem.firstChild; n; n = n.nextSibling) {
+            if (n.tagName == "SPAN") yield n;
         }
     }
 
-    static readSource(pre, langs, lineBreak = false) {
-        return webTTS.readSourceAuto(pre.innerHTML, langs, lineBreak);
-    }
-
-    static readSourceAuto(text, langs, lineBreak = false) {
-        if (langs.length == 0) {
-            return webTTS.readSourceMarkdown(text, lineBreak);
-        } else if (text.includes("\t")) {
-            text = text.trim().replace(/\n/g, "\n\n").replace(/\t/g, "\n");
-        } else if (text.includes("    ")) {
-            text = text.replace(/\n/g, "\n\n").replace(/    /g, "\n");
-        }
-        return webTTS.readSourceText(text, langs, lineBreak);
-    }
-
-    static readSourceMarkdown(text, lineBreak = false) {
-        const rows = webTTS.trim(text.split("\n")).map(line => {
-            line = line.trim();
-            if (line.startsWith("|") && line.endsWith("|")) {
-                line = line.substring(1, line.length - 1);
-            }
-            return line.split("|").map(x => x.trim());
-        });
-        return webTTS.readSourceTable(rows.slice(2), rows[0], lineBreak);
-    }
-
-    static readSourceText(text, langs, lineBreak = false) {
-        // text: "1\n2\n3\n\n4\n5\n6" => table: [["1", "2", "3"], [], ["4", "5", "6"]]]
-        const lines = webTTS.trim((text.trim() + "\n").split("\n"));
-        const table = [];
-        let i = 0;
-        while (i < lines.length) {
-            if (lines[i].trim()) {
-                table.push(lines.slice(i, i + langs.length));
-                i += langs.length;
-            } else {
-                table.push([]);
-                i++;
-            }
-        }
-        return webTTS.readSourceTable(table, langs, lineBreak);
-    }
-
-    static readSourceTable(table, langs, lineBreak = false) {
-        const count = langs.length;
-        const lines = Array(count).fill().map(() => []);
-        const texts = Array(count).fill().map(() => []);
-        for (const row of table.concat([[]])) {
-            if (row.length) {
-                for (let i = 0; i < count; i++) {
-                    lines[i].push(i < row.length ? row[i] : "");
-                }
-            }
-            if (!row.length || lineBreak) {
-                for (let i = 0; i < count; i++) {
-                    if (lines[i].length) {
-                        texts[i].push(lines[i]);
-                        lines[i] = [];
-                    }
-                }
-            }
-        }
-        return texts;
-    }
-
-    static trim(stringArray) {
-        let start = 0;
-        while (start < stringArray.length && stringArray[start].trim() == "") start++;
-        let end = stringArray.length;
-        while (end > start && stringArray[end - 1].trim() == "") end--;
-        return stringArray.slice(start, end);
+    static convertSource(pre, ...langs) {
+        return webTTS_Table.convertTable(webTTS_Source.readSource(pre, langs), langs);
     }
 
     static convertTable(texts, langs, hasHeader = false) {
@@ -479,10 +417,99 @@ class webTTS {
         return table;
     }
 
-    static convertSource(pre, ...langs) {
-        return webTTS.convertTable(webTTS.readSource(pre, langs), langs);
+    static setSpeakText(source, lang, words) {
+        for (let tr of Array.from(source.getElementsByTagName("tr"))) {
+            if (tr.getAttribute("language") != lang) continue;
+            for (let td of Array.from(tr.getElementsByTagName("td"))) {
+                for (let span of Array.from(webTTS_Table.getSpans(td))) {
+                    let s1 = span.innerHTML, s2 = s1;
+                    for (let src in words) {
+                        let dst = '<span s="' + words[src] + '">$&</span>';
+                        s2 = s2.replace(RegExp(src, "g"), dst);
+                    }
+                    if (s1 != s2) span.innerHTML = s2;
+                }
+            }
+        }
     }
 }
+webTTS.copyStaticMethods(webTTS_Table);
+
+class webTTS_Source {
+    static readSource(pre, langs, lineBreak = false) {
+        return webTTS_Source.readSourceAuto(pre.innerHTML, langs, lineBreak);
+    }
+
+    static readSourceAuto(text, langs, lineBreak = false) {
+        if (langs.length == 0) {
+            return webTTS_Source.readSourceMarkdown(text, lineBreak);
+        } else if (text.includes("\t")) {
+            text = text.trim().replace(/\n/g, "\n\n").replace(/\t/g, "\n");
+        } else if (text.includes("    ")) {
+            text = text.replace(/\n/g, "\n\n").replace(/    /g, "\n");
+        }
+        return webTTS_Source.readSourceText(text, langs, lineBreak);
+    }
+
+    static readSourceMarkdown(text, lineBreak = false) {
+        const rows = webTTS_Source.trim(text.split("\n")).map(line => {
+            line = line.trim();
+            if (line.startsWith("|") && line.endsWith("|")) {
+                line = line.substring(1, line.length - 1);
+            }
+            return line.split("|").map(x => x.trim());
+        });
+        return webTTS_Source.readSourceTable(rows.slice(2), rows[0], lineBreak);
+    }
+
+    static readSourceText(text, langs, lineBreak = false) {
+        // text: "1\n2\n3\n\n4\n5\n6" => table: [["1", "2", "3"], [], ["4", "5", "6"]]]
+        const lines = webTTS_Source.trim((text.trim() + "\n").split("\n"));
+        const table = [];
+        let i = 0;
+        while (i < lines.length) {
+            if (lines[i].trim()) {
+                table.push(lines.slice(i, i + langs.length));
+                i += langs.length;
+            } else {
+                table.push([]);
+                i++;
+            }
+        }
+        return webTTS_Source.readSourceTable(table, langs, lineBreak);
+    }
+
+    static readSourceTable(table, langs, lineBreak = false) {
+        const len = langs.length;
+        const lines = Array(len).fill().map(() => []);
+        const texts = Array(len).fill().map(() => []);
+        for (const row of table.concat([[]])) {
+            if (row.length) {
+                for (let i = 0; i < len; i++) {
+                    lines[i].push(i < row.length ? row[i] : "");
+                }
+            }
+            if (!row.length || lineBreak) {
+                for (let i = 0; i < len; i++) {
+                    if (lines[i].length) {
+                        texts[i].push(lines[i]);
+                        lines[i] = [];
+                    }
+                }
+            }
+        }
+        return texts;
+    }
+
+    static trim(stringArray) {
+        let start = 0;
+        while (start < stringArray.length && stringArray[start].trim() == "") start++;
+        let end = stringArray.length;
+        while (end > start && stringArray[end - 1].trim() == "") end--;
+        return stringArray.slice(start, end);
+    }
+}
+webTTS.copyStaticMethods(webTTS_Source);
 
 class webTTS_Position {
     constructor(elem) {
