@@ -429,6 +429,7 @@ class webTTS_Table {
     }
 
     static convertSource(pre, ...langs) {
+        if (langs.length == 0) langs = Object.keys(webTTS.langs);
         return webTTS_Table.convertTable(webTTS_Source.readSource(pre, langs), langs);
     }
 
