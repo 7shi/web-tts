@@ -291,7 +291,6 @@ class webTTS_Table {
         const xchs = Array.from({ length: coln - 1 }, () => document.createElement("span"));
         const speechRates = (function() {
             const language = navigator.language || navigator.userLanguage;
-            console.log(language);
             if (language.startsWith("ja")) {
                 return [
                     [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
