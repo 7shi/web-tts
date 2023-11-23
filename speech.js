@@ -106,12 +106,11 @@ class webTTS_Speak {
     static setSpeak(elem, language = "", ...targets) {
         // targets: {lang1: {span1, span2, ...}, ...}
         if (targets.length) {
-            elem.speakTarget = [];
+            elem.speakTarget = targets;
             for (const t of targets) {
-                elem.speakTarget.push(t);
                 if (!language) continue;
                 t.language = webTTS.langs[language];
-                t.spans = elem.speakTarget;
+                t.spans = targets;
                 t.speak = webTTS_Speak.speakSpan; // use as `t.speak()`
             }
         }
