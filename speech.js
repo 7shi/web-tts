@@ -289,9 +289,19 @@ class webTTS_Table {
         const sls = Array.from({ length: coln }, () => document.createElement("select"));
         const rts = Array.from({ length: coln }, () => document.createElement("select"));
         const xchs = Array.from({ length: coln - 1 }, () => document.createElement("span"));
-        const speechRates = [
-            [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
-        ];
+        const speechRates = (function() {
+            const language = navigator.language || navigator.userLanguage;
+            console.log(language);
+            if (language.startsWith("ja")) {
+                return [
+                    [2, "速い"], [1.5, "やや速い"], [1, "普通"], [0.75, "やや遅い"], [0.5, "遅い"]
+                ];
+            } else {
+                return [
+                    [2, "Fast"], [1.5, "Faster"], [1, "Normal"], [0.75, "Slower"], [0.5, "Slow"]
+                ];
+            }
+        })();
         text.rates = rts;
         const w = Math.floor(100 / coln);
         for (let i = 0; i < coln; i++) {
